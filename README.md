@@ -6,7 +6,7 @@ Solaness는 감정 상태와 실시간 환경(날씨·일조량)을 기반으로
 
 <!-- 공모전명, 제출 정보 등 필요하면 여기 추가 -->
 
----
+<br>
 
 ## 🛠 기술 스택
 
@@ -20,9 +20,9 @@ Solaness는 감정 상태와 실시간 환경(날씨·일조량)을 기반으로
 |---|---|
 | Frontend | React, Vite, TypeScript, Tailwind CSS v4, React Router |
 | Backend | Firebase (Authentication, Firestore, Storage, Hosting) |
-| External API | 한국관광공사 공공데이터 API |
+| External API | 한국관광공사 공공데이터 API |  
 
----
+<br>
 
 ## 📁 폴더 구조
 
@@ -49,7 +49,7 @@ src/
   main.tsx
 ```
 
----
+<br>
 
 ## 🚀 실행 방법
 
@@ -77,7 +77,7 @@ src/
 ### 요구 사항
 - Node.js 18 이상
 
----
+<br>
 
 ## 🌿 Git 브랜치 전략 / 커밋 컨벤션
 
