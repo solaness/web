@@ -37,13 +37,13 @@ function App() {
         <Route path="/onboarding/test/3" element={<Test3 />} />
         <Route path="/onboarding/result" element={<Result />} />
 
+        <Route path="/chatbot" element={<Chatbot />} />
+
         <Route element={<MainLayout />}>
           <Route path="/home" element={<Home />} />
 
           <Route path="/map" element={<MapSearch />} />
           <Route path="/map/:id" element={<MapDetail />} />
-
-          <Route path="/chatbot" element={<Chatbot />} />
 
           <Route path="/history" element={<HistoryMain />} />
           <Route path="/history/calendar" element={<Calendar />} />
