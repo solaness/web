@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
+import MainLayout from './components/layout/MainLayout'
+
 import Splash from './pages/onboarding/Splash'
 import Intro from './pages/onboarding/Intro'
 import Login from './pages/onboarding/Login'
@@ -35,19 +37,21 @@ function App() {
         <Route path="/onboarding/test/3" element={<Test3 />} />
         <Route path="/onboarding/result" element={<Result />} />
 
-        <Route path="/home" element={<Home />} />
-
-        <Route path="/map" element={<MapSearch />} />
-        <Route path="/map/:id" element={<MapDetail />} />
-
         <Route path="/chatbot" element={<Chatbot />} />
 
-        <Route path="/history" element={<HistoryMain />} />
-        <Route path="/history/calendar" element={<Calendar />} />
-        <Route path="/history/visits" element={<Visits />} />
+        <Route element={<MainLayout />}>
+          <Route path="/home" element={<Home />} />
 
-        <Route path="/my" element={<MyMain />} />
-        <Route path="/my/edit" element={<EditProfile />} />
+          <Route path="/map" element={<MapSearch />} />
+          <Route path="/map/:id" element={<MapDetail />} />
+
+          <Route path="/history" element={<HistoryMain />} />
+          <Route path="/history/calendar" element={<Calendar />} />
+          <Route path="/history/visits" element={<Visits />} />
+
+          <Route path="/my" element={<MyMain />} />
+          <Route path="/my/edit" element={<EditProfile />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )
