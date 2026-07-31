@@ -4,6 +4,7 @@ about: 버그 리포트
 title: "[Bug] "
 labels: bug
 assignees: ''
+
 ---
 
 ## 🐛 어떤 문제인가요?

@@ -2,8 +2,9 @@
 name: Feature
 about: 새 화면 또는 기능 구현
 title: "[Feature] "
-labels: feature
+labels: enhancement
 assignees: ''
+
 ---
 
 ## 🖼️ 화면/기능
