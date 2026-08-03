@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
+import { AuthProvider } from './contexts/AuthContext'
+import RequireAuth from './components/shared/RequireAuth'
 import MainLayout from './components/layout/MainLayout'
 
 import Splash from './pages/onboarding/Splash'
@@ -25,35 +27,50 @@ import EditProfile from './pages/my/EditProfile'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Splash />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Splash />} />
 
-        <Route path="/onboarding/intro" element={<Intro />} />
-        <Route path="/onboarding/login" element={<Login />} />
-        <Route path="/onboarding/region" element={<Region />} />
-        <Route path="/onboarding/test/1" element={<Test1 />} />
-        <Route path="/onboarding/test/2" element={<Test2 />} />
-        <Route path="/onboarding/test/3" element={<Test3 />} />
-        <Route path="/onboarding/result" element={<Result />} />
+          <Route path="/onboarding/intro" element={<Intro />} />
+          <Route path="/onboarding/login" element={<Login />} />
+          <Route path="/onboarding/region" element={<Region />} />
+          <Route path="/onboarding/test/1" element={<Test1 />} />
+          <Route path="/onboarding/test/2" element={<Test2 />} />
+          <Route path="/onboarding/test/3" element={<Test3 />} />
+          <Route path="/onboarding/result" element={<Result />} />
 
-        <Route path="/chatbot" element={<Chatbot />} />
+          <Route
+            path="/chatbot"
+            element={
+              <RequireAuth>
+                <Chatbot />
+              </RequireAuth>
+            }
+          />
 
-        <Route element={<MainLayout />}>
-          <Route path="/home" element={<Home />} />
+          <Route
+            element={
+              <RequireAuth>
+                <MainLayout />
+              </RequireAuth>
+            }
+          >
+            <Route path="/home" element={<Home />} />
 
-          <Route path="/map" element={<MapSearch />} />
-          <Route path="/map/:id" element={<MapDetail />} />
+            <Route path="/map" element={<MapSearch />} />
+            <Route path="/map/:id" element={<MapDetail />} />
 
-          <Route path="/history" element={<HistoryMain />} />
-          <Route path="/history/calendar" element={<Calendar />} />
-          <Route path="/history/visits" element={<Visits />} />
+            <Route path="/history" element={<HistoryMain />} />
+            <Route path="/history/calendar" element={<Calendar />} />
+            <Route path="/history/visits" element={<Visits />} />
 
-          <Route path="/my" element={<MyMain />} />
-          <Route path="/my/edit" element={<EditProfile />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            <Route path="/my" element={<MyMain />} />
+            <Route path="/my/edit" element={<EditProfile />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

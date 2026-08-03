@@ -1,45 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../../firebase/config";
+import { useAuth } from "../../contexts/AuthContext";
+import SocialLoginButton from "../../components/shared/SocialLoginButton";
 
 const HOME_PATH = "/home";
-const ONBOARDING_PATH = "/onboarding/next";
-
-const buttonStyle =
-  "flex h-[53px] w-full max-w-[322px] items-center justify-center gap-2 rounded-[25px] text-[14px] font-bold leading-[22px]";
+const ONBOARDING_PATH = "/onboarding/region";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { loginWithGoogle, startGuestMode } = useAuth();
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
 
     try {
-      const provider = new GoogleAuthProvider();
-      const { user } = await signInWithPopup(auth, provider);
-
-      const userRef = doc(db, "users", user.uid);
-      const snapshot = await getDoc(userRef);
-
-      if (!snapshot.exists()) {
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          onboardingCompleted: false,
-          createdAt: serverTimestamp(),
-        });
-
-        navigate(ONBOARDING_PATH);
-        return;
-      }
-
-      const { onboardingCompleted = false } = snapshot.data();
-
+      const { onboardingCompleted } = await loginWithGoogle();
       navigate(onboardingCompleted ? HOME_PATH : ONBOARDING_PATH);
     } catch (error) {
       console.error("Google 로그인 실패:", error);
@@ -49,7 +25,7 @@ export default function LoginPage() {
   };
 
   const handleGuestStart = () => {
-    sessionStorage.setItem("isGuest", "true");
+    startGuestMode();
     navigate(ONBOARDING_PATH);
   };
 
@@ -77,14 +53,7 @@ export default function LoginPage() {
         </div>
 
         <div className="flex w-full flex-col items-center space-y-4">
-          <button
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className={`${buttonStyle} border border-gray-300 bg-white text-gray-800 shadow-[4px_4px_4px_0px_#FAC775] disabled:opacity-50`}
-          >
-            <span>G</span>
-            {isLoading ? "로그인 중..." : "Google로 로그인"}
-          </button>
+          <SocialLoginButton onClick={handleGoogleLogin} isLoading={isLoading} />
 
           <div className="flex w-full max-w-[322px] items-center gap-3">
             <div className="h-px flex-1 bg-gray-200" />
@@ -94,7 +63,7 @@ export default function LoginPage() {
 
           <button
             onClick={handleGuestStart}
-            className={`${buttonStyle} bg-[#FFAC27] text-white shadow-[4px_4px_4px_0px_#8A3E0F40]`}
+            className="flex h-[53px] w-full max-w-[322px] items-center justify-center gap-2 rounded-[25px] bg-[#FFAC27] text-[14px] font-bold leading-[22px] text-white shadow-[4px_4px_4px_0px_#8A3E0F40]"
           >
             로그인 없이 시작하기
           </button>
