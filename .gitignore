@@ -36,3 +36,6 @@ ui-debug.log
 
 # Windows
 Thumbs.db
+
+.agents/
+skills-lock.json
