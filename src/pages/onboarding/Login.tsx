@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import SocialLoginButton from "../../components/shared/SocialLoginButton";
+import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.png";
 
 const HOME_PATH = "/home";
 const ONBOARDING_PATH = "/onboarding/region";
 
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { loginWithGoogle, startGuestMode } = useAuth();
+export default function LoginPage() { 
+  const [isLoading, setIsLoading] = useState(false); 
+  const navigate = useNavigate(); 
+  const { loginWithGoogle, startGuestMode } = useAuth(); 
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -41,11 +42,15 @@ export default function LoginPage() {
         "
       >
         <div className="flex flex-1 flex-col items-center justify-center gap-8">
-          <div className="flex h-[248px] w-[293px] items-center justify-center text-[120px]">
-            🐱
+          <div className="flex h-[248px] w-[293px] items-center justify-center">
+            <img
+              src={solnyangHelloSun}
+              alt="쏠냥이가 해를 향해 인사하는 모습"
+              className="h-full w-full object-contain"
+            />
           </div>
 
-          <p className="w-full max-w-[364px] text-center text-lg font-bold leading-snug text-gray-900">
+          <p className="w-full max-w-[364px] text-center text-lg font-bold leading-snug text-[#754308]">
             더 밝고 건강한 내일을 위해,
             <br />
             쏠라니스와 함께 시작해 볼까요?
@@ -56,9 +61,9 @@ export default function LoginPage() {
           <SocialLoginButton onClick={handleGoogleLogin} isLoading={isLoading} />
 
           <div className="flex w-full max-w-[322px] items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs text-gray-400">또는</span>
-            <div className="h-px flex-1 bg-gray-200" />
+            <div className="h-px flex-1 bg-[#A1A1A1]" />
+            <span className="text-xs text-[#A1A1A1]">또는</span>
+            <div className="h-px flex-1 bg-[#A1A1A1]" />
           </div>
 
           <button
