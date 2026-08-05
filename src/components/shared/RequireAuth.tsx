@@ -6,7 +6,15 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   const { user, isGuest, loading } = useAuth();
 
   if (loading) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-4 border-[#FFAC27] border-t-transparent"
+          role="status"
+          aria-label="로딩 중"
+        />
+      </div>
+    );
   }
 
   if (!user && !isGuest) {

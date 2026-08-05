@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FirebaseError } from "firebase/app";
 import { useAuth } from "../../contexts/AuthContext";
 import SocialLoginButton from "../../components/shared/SocialLoginButton";
 import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.png";
@@ -7,19 +8,43 @@ import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.png";
 const HOME_PATH = "/home";
 const ONBOARDING_PATH = "/onboarding/region";
 
-export default function LoginPage() { 
-  const [isLoading, setIsLoading] = useState(false); 
-  const navigate = useNavigate(); 
-  const { loginWithGoogle, startGuestMode } = useAuth(); 
+const SILENT_ERROR_CODES = new Set([
+  "auth/popup-closed-by-user",
+  "auth/cancelled-popup-request",
+]);
+
+function getLoginErrorMessage(error: unknown): string | null {
+  if (!(error instanceof FirebaseError)) {
+    return "로그인에 실패했어요. 잠시 후 다시 시도해 주세요.";
+  }
+
+  if (SILENT_ERROR_CODES.has(error.code)) {
+    return null;
+  }
+
+  if (error.code === "auth/popup-blocked") {
+    return "팝업이 차단되었어요. 브라우저 설정에서 팝업을 허용한 뒤 다시 시도해 주세요.";
+  }
+
+  return "로그인에 실패했어요. 잠시 후 다시 시도해 주세요.";
+}
+
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { loginWithGoogle, startGuestMode } = useAuth();
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
 
     try {
       const { onboardingCompleted } = await loginWithGoogle();
       navigate(onboardingCompleted ? HOME_PATH : ONBOARDING_PATH);
     } catch (error) {
       console.error("Google 로그인 실패:", error);
+      setErrorMessage(getLoginErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +83,12 @@ export default function LoginPage() {
         </div>
 
         <div className="flex w-full flex-col items-center space-y-4">
+          {errorMessage && (
+            <p className="text-center text-sm font-bold text-red-500">
+              {errorMessage}
+            </p>
+          )}
+
           <SocialLoginButton onClick={handleGoogleLogin} isLoading={isLoading} />
 
           <div className="flex w-full max-w-[322px] items-center gap-3">
