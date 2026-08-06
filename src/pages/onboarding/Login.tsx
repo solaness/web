@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "../../contexts/AuthContext";
-import SocialLoginButton from "../../components/shared/SocialLoginButton";
+import GoogleLoginButton from "../../components/shared/GoogleLoginButton";
 import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.png";
 
 const HOME_PATH = "/home";
@@ -29,7 +29,7 @@ function getLoginErrorMessage(error: unknown): string | null {
   return "로그인에 실패했어요. 잠시 후 다시 시도해 주세요.";
 }
 
-export default function LoginPage() {
+function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen justify-center bg-gray-100">
       <div
         className="
-          flex w-full max-w-[430px]
+          flex w-full max-w-md
           min-h-screen flex-col
           items-center justify-between
           bg-gradient-to-b from-white via-white to-orange-50
@@ -75,25 +75,27 @@ export default function LoginPage() {
             />
           </div>
 
-          <p className="w-full max-w-[364px] text-center text-lg font-bold leading-snug text-[#754308]">
+          <p className="w-full max-w-[364px] text-center text-2xl font-bold leading-tight text-[#754308]">
             더 밝고 건강한 내일을 위해,
             <br />
             쏠라니스와 함께 시작해 볼까요?
           </p>
         </div>
 
-        <div className="flex w-full flex-col items-center space-y-4">
+        <div className="flex w-full flex-col items-center space-y-6">
           {errorMessage && (
             <p className="text-center text-sm font-bold text-red-500">
               {errorMessage}
             </p>
           )}
 
-          <SocialLoginButton onClick={handleGoogleLogin} isLoading={isLoading} />
+          <GoogleLoginButton onClick={handleGoogleLogin} isLoading={isLoading} />
 
           <div className="flex w-full max-w-[322px] items-center gap-3">
             <div className="h-px flex-1 bg-[#A1A1A1]" />
-            <span className="text-xs text-[#A1A1A1]">또는</span>
+            <span className="text-[15px] font-semibold leading-[22px] text-[#A1A1A1]">
+              또는
+            </span>
             <div className="h-px flex-1 bg-[#A1A1A1]" />
           </div>
 
@@ -108,3 +110,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default Login;

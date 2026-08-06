@@ -1,7 +1,9 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -42,35 +44,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = useCallback(async () => {
     const nextUser = await signInWithGoogle();
-    const onboardingCompleted = await ensureUserDocument(nextUser);
+
+    let onboardingCompleted: boolean;
+    try {
+      onboardingCompleted = await ensureUserDocument(nextUser);
+    } catch (error) {
+      await signOutUser();
+      throw error;
+    }
 
     sessionStorage.removeItem(GUEST_STORAGE_KEY);
     setIsGuest(false);
     setUser(nextUser);
 
     return { onboardingCompleted };
-  };
+  }, []);
 
-  const startGuestMode = () => {
+  const startGuestMode = useCallback(() => {
     sessionStorage.setItem(GUEST_STORAGE_KEY, "true");
     setIsGuest(true);
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await signOutUser();
     sessionStorage.removeItem(GUEST_STORAGE_KEY);
     setIsGuest(false);
     setUser(null);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, isGuest, loading, loginWithGoogle, startGuestMode, logout }),
+    [user, isGuest, loading, loginWithGoogle, startGuestMode, logout],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{ user, isGuest, loading, loginWithGoogle, startGuestMode, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 }
 
