@@ -39,3 +39,6 @@ Thumbs.db
 
 .agents/
 skills-lock.json
+
+# Generated data
+scripts/input/

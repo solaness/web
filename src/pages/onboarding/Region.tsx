@@ -1,72 +1,101 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DistrictSelector from "../../components/onboarding/DistrictSelector";
 import RegionDropdown from "../../components/onboarding/RegionDropdown";
+import { useAuth } from "../../contexts/AuthContext";
 import { REGIONS } from "../../data/regions";
 
 interface StoredRegion {
-  region: string;
-  district: string;
+  provinceCode: string;
+  districtCode: string;
 }
 
 const STORAGE_KEY = "onboardingRegion";
 
+const EMPTY_REGION: StoredRegion = {
+  provinceCode: "",
+  districtCode: "",
+};
+
 function getStoredRegion(): StoredRegion {
-  const storedValue = sessionStorage.getItem(STORAGE_KEY);
+  const storedValue =
+    sessionStorage.getItem(STORAGE_KEY);
 
   if (!storedValue) {
-    return {
-      region: "",
-      district: "",
-    };
+    return EMPTY_REGION;
   }
 
   try {
-    const parsedValue = JSON.parse(storedValue) as Partial<StoredRegion>;
+    const parsedValue = JSON.parse(
+      storedValue,
+    ) as Partial<StoredRegion>;
+
+    const provinceCode =
+      parsedValue.provinceCode ?? "";
+
+    const districtCode =
+      parsedValue.districtCode ?? "";
+
+    const matchedRegion = REGIONS.find(
+      (region) =>
+        region.code === provinceCode,
+    );
+
+    if (!matchedRegion) {
+      return EMPTY_REGION;
+    }
+
+    const isValidDistrict =
+      matchedRegion.districts.some(
+        (district) =>
+          district.code === districtCode,
+      );
 
     return {
-      region: parsedValue.region ?? "",
-      district: parsedValue.district ?? "",
+      provinceCode,
+      districtCode: isValidDistrict
+        ? districtCode
+        : "",
     };
   } catch {
-    return {
-      region: "",
-      district: "",
-    };
+    return EMPTY_REGION;
   }
 }
 
 function Region() {
   const navigate = useNavigate();
-  const storedRegion = useMemo(() => getStoredRegion(), []);
+  const { user } = useAuth();
 
-  const [selectedRegion, setSelectedRegion] = useState(
-    storedRegion.region,
-  );
-  const [selectedDistrict, setSelectedDistrict] = useState(
-    storedRegion.district,
-  );
-
-  const regionNames = useMemo(
-    () => REGIONS.map((region) => region.name),
+  const storedRegion = useMemo(
+    () => getStoredRegion(),
     [],
   );
 
-  const districts = useMemo(() => {
-    return (
-      REGIONS.find(
-        (region) => region.name === selectedRegion,
-      )?.districts ?? []
-    );
-  }, [selectedRegion]);
+  const [
+    selectedRegionCode,
+    setSelectedRegionCode,
+  ] = useState(storedRegion.provinceCode);
+
+  const [
+    selectedDistrictCode,
+    setSelectedDistrictCode,
+  ] = useState(storedRegion.districtCode);
+
+  const displayName =
+    user?.displayName?.trim() || "김솜솜";
 
   const canProceed =
-    selectedRegion.length > 0 &&
-    selectedDistrict.length > 0;
+    selectedRegionCode.length > 0 &&
+    selectedDistrictCode.length > 0;
 
-  const handleRegionChange = (region: string) => {
-    setSelectedRegion(region);
-    setSelectedDistrict("");
+  const handleRegionChange = (
+    regionCode: string,
+  ) => {
+    if (regionCode === selectedRegionCode) {
+      return;
+    }
+
+    setSelectedRegionCode(regionCode);
+    setSelectedDistrictCode("");
   };
 
   const handlePrevious = () => {
@@ -78,11 +107,27 @@ function Region() {
       return;
     }
 
+    const selectedRegion = REGIONS.find(
+      (region) =>
+        region.code === selectedRegionCode,
+    );
+
+    const selectedDistrict =
+      selectedRegion?.districts.find(
+        (district) =>
+          district.code ===
+          selectedDistrictCode,
+      );
+
+    if (!selectedRegion || !selectedDistrict) {
+      return;
+    }
+
     sessionStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        region: selectedRegion,
-        district: selectedDistrict,
+        provinceCode: selectedRegion.code,
+        districtCode: selectedDistrict.code,
       }),
     );
 
@@ -90,90 +135,122 @@ function Region() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white px-5 pb-6 pt-5">
-      <header className="mb-10">
-        <div className="mb-5 flex items-center gap-4">
+    <main
+      className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]"
+      style={{
+        fontFamily:
+          '"Pretendard Variable", Pretendard, sans-serif',
+      }}
+    >
+      {/* 왼쪽 위 배경 장식 */}
+      <div
+        className="pointer-events-none absolute -left-[72px] -top-[45px] h-[195px] w-[216px] rounded-full blur-[40px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,174,176,0.18) 0%, rgba(255,253,246,0.18) 70%)",
+        }}
+        aria-hidden="true"
+      />
+
+      {/* 오른쪽 위 배경 장식 */}
+      <div
+        className="pointer-events-none absolute right-[-45px] top-[52px] h-[225px] w-[219px] rounded-full blur-[40px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,183,67,0.18) 0%, rgba(255,253,246,0.18) 70%)",
+        }}
+        aria-hidden="true"
+      />
+
+      {/* 오른쪽 가운데 배경 장식 */}
+      <div
+        className="pointer-events-none absolute right-[-64px] top-[319px] h-[217px] w-[222px] rounded-full blur-[40px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(201,235,156,0.18) 0%, rgba(255,253,246,0.18) 70%)",
+        }}
+        aria-hidden="true"
+      />
+
+      {/* 왼쪽 아래 배경 장식 */}
+      <div
+        className="pointer-events-none absolute -left-[72px] bottom-[-81px] h-[372px] w-[386px] rounded-full blur-[40px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,157,0,0.18) 0%, rgba(255,253,246,0.18) 70%)",
+        }}
+        aria-hidden="true"
+      />
+
+      {/* 상단 영역 */}
+      <header className="relative z-10 shrink-0 px-[19px] pt-6">
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition hover:bg-gray-100"
+            className="shrink-0 text-sm font-semibold leading-[22px] text-[#FFAC27]"
             onClick={handlePrevious}
             aria-label="이전 화면으로 이동"
           >
-            <svg
-              className="h-6 w-6"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M15 18L9 12L15 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            이전
           </button>
 
-          <div className="flex-1">
-            <div className="mb-2 flex justify-end">
-              <span className="text-sm font-medium text-gray-500">
-                1/4
-              </span>
-            </div>
-
+          <div className="flex flex-1 items-center gap-[11px]">
             <div
-              className="h-2 overflow-hidden rounded-full bg-orange-100"
+              className="relative h-[7px] flex-1 overflow-hidden rounded-lg border-2 border-[#FFAC27]"
               role="progressbar"
               aria-label="온보딩 진행률"
               aria-valuemin={1}
               aria-valuemax={4}
               aria-valuenow={1}
             >
-              <div className="h-full w-1/4 rounded-full bg-orange-500" />
+              <div className="absolute inset-y-0 left-0 w-1/4 bg-[#FFAC27]" />
             </div>
+
+            <span className="shrink-0 text-sm font-semibold leading-[22px] text-[#FFAC27]">
+              1 / 4
+            </span>
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold leading-snug text-gray-900">
-          거주 지역을 알려주세요!
+        <h1 className="mt-7 px-1 text-xl font-bold [word-spacing:0] text-black">
+          {`${displayName}님의 거주 지역을 알려주세요!`}
         </h1>
-
-        <p className="mt-2 text-sm leading-6 text-gray-500">
-          선택한 지역을 바탕으로 가까운 힐링 스팟을 추천해드려요.
-        </p>
       </header>
 
-      <section className="flex-1">
-        <label className="mb-3 block text-base font-semibold text-gray-900">
-          시·도
-        </label>
-
+      {/* 지역 목록 */}
+      <section className="relative z-10 mt-6 min-h-0 flex-1 overflow-y-auto px-[19px] pb-4">
         <RegionDropdown
-          regions={regionNames}
-          value={selectedRegion}
-          onChange={handleRegionChange}
-        />
-
-        <DistrictSelector
-          districts={districts}
-          value={selectedDistrict}
-          onChange={setSelectedDistrict}
+          regions={REGIONS}
+          selectedRegionCode={
+            selectedRegionCode
+          }
+          selectedDistrictCode={
+            selectedDistrictCode
+          }
+          onRegionChange={
+            handleRegionChange
+          }
+          onDistrictChange={
+            setSelectedDistrictCode
+          }
         />
       </section>
 
-      <button
-        type="button"
-        className={`mt-8 w-full rounded-2xl py-4 text-base font-semibold transition ${
-          canProceed
-            ? "bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700"
-            : "cursor-not-allowed bg-gray-200 text-gray-400"
-        }`}
-        disabled={!canProceed}
-        onClick={handleNext}
-      >
-        다음
-      </button>
+      {/* 하단 다음 버튼 */}
+      <footer className="relative z-20 shrink-0 bg-gradient-to-t from-[#FFFDF6] via-[#FFFDF6] to-transparent px-16 pb-11 pt-5">
+        <button
+          type="button"
+          className={`h-[53px] w-full rounded-[25px] text-base font-bold leading-[22px] text-white transition-colors ${
+            canProceed
+              ? "bg-[#FFAC27] shadow-[4px_4px_4px_rgba(138,62,15,0.25)] hover:bg-[#FF9D00] active:bg-[#F28F00]"
+              : "cursor-not-allowed bg-[#D9D9D9]"
+          }`}
+          disabled={!canProceed}
+          onClick={handleNext}
+        >
+          다음
+        </button>
+      </footer>
     </main>
   );
 }
