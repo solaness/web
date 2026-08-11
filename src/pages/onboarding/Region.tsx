@@ -212,7 +212,7 @@ function Region() {
           </div>
         </div>
 
-        <h1 className="mt-7 px-1 text-xl font-bold [word-spacing:0] text-black">
+        <h1 className="mt-7 px-1 text-xl font-bold [word-spacing:0] text-[#754308]">
           {`${displayName}님의 거주 지역을 알려주세요!`}
         </h1>
       </header>
