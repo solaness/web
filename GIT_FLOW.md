@@ -5,9 +5,9 @@
 ```
 main                # 항상 배포 가능한 상태 (Firebase Hosting 배포 대상)
  └─ develop         # 다음 배포 전 통합 브랜치
-     ├─ feature/onboarding-login
-     ├─ feature/map-search
-     ├─ fix/calendar-date-select-bug
+     ├─ feature/
+     ├─ feature/
+     ├─ fix/
      └─ ...
 ```
 
