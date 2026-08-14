@@ -18,9 +18,9 @@ main                # 항상 배포 가능한 상태 (Firebase Hosting 배포 �
 ## 브랜치 이름 규칙
 
 ```
-feature/화면-기능        예: feature/onboarding-wbti-test
-fix/버그내용             예: fix/map-search-result-missing
-chore/작업내용           예: chore/firebase-initial-setup
+feature/이슈번호-화면-기능        예: feature/1-onboarding-wbti-test
+fix/이슈번호-버그내용             예: fix/2-map-search-result-missing
+chore/이슈번호-작업내용           예: chore/3-firebase-initial-setup
 ```
 
 ## 작업 순서
