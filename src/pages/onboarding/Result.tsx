@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ResultTypeCard from "../../components/onboarding/ResultTypeCard";
+import ResultActionButtons from "../../components/onboarding/ResultActionButtons";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   useWbtiAnswers,
@@ -103,9 +104,10 @@ function Result() {
     >
       <BackgroundBlobs />
 
-      <div className="relative z-10 w-full">
-        <ResultTypeCard
-          typeInfo={typeInfo}
+      <div className="relative z-10 flex w-full flex-col items-center gap-6">
+        <ResultTypeCard typeInfo={typeInfo} />
+
+        <ResultActionButtons
           onStart={handleStart}
           isSubmitting={isSubmitting}
           onShare={handleShare}
