@@ -127,50 +127,21 @@ function Region() {
     });
   };
 
-  const handleNext = () => {
-    if (!canProceed) {
-      return;
-    }
+  useEffect(() => {
+    const guardKey = "regionExitGuard";
 
-    const selectedRegion = REGIONS.find(
-      (region) =>
-        region.code === selectedRegionCode,
-    );
-
-    const selectedDistrict =
-      selectedRegion?.districts.find(
-        (district) =>
-          district.code ===
-          selectedDistrictCode,
+    if (!window.history.state?.[guardKey]) {
+      window.history.pushState(
+        {
+          ...window.history.state,
+          [guardKey]: true,
+        },
+        "",
+        window.location.href,
       );
-
-    if (!selectedRegion || !selectedDistrict) {
-      return;
     }
 
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        provinceCode: selectedRegion.code,
-        districtCode: selectedDistrict.code,
-      }),
-    );
-
-    useEffect(() => {
-      const guardKey = "regionExitGuard";
-
-      if (!window.history.state?.[guardKey]) {
-        window.history.pushState(
-          {
-            ...window.history.state,
-            [guardKey]: true,
-          },
-          "",
-          window.location.href,
-        );
-      }
-
-      const handlePopState = () => {
+    const handlePopState = () => {
       if (allowNavigationRef.current) {
         return;
       }
@@ -200,9 +171,38 @@ function Region() {
     };
   }, []);
 
-  navigate("/onboarding/test/1");
-  };
+  const handleNext = () => {
+    if (!canProceed) {
+      return;
+    }
 
+    const selectedRegion = REGIONS.find(
+      (region) =>
+        region.code === selectedRegionCode,
+    );
+
+    const selectedDistrict =
+      selectedRegion?.districts.find(
+        (district) =>
+          district.code === selectedDistrictCode,
+      );
+
+    if (!selectedRegion || !selectedDistrict) {
+      return;
+    }
+
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        provinceCode: selectedRegion.code,
+        districtCode: selectedDistrict.code,
+      }),
+    );
+
+    allowNavigationRef.current = true;
+    navigate("/onboarding/test/1");
+  };
+  
   return (
     <main
       className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]"
