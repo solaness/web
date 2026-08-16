@@ -1,4 +1,9 @@
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import RegionDropdown from "../../components/onboarding/RegionDropdown";
 import { useAuth } from "../../contexts/AuthContext";
@@ -64,6 +69,11 @@ function getStoredRegion(): StoredRegion {
 function Region() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  const [isExitModalOpen, setIsExitModalOpen] =
+    useState(false);
+
+  const allowNavigationRef = useRef(false);
 
   const storedRegion = useMemo(
     () => getStoredRegion(),
@@ -99,8 +109,67 @@ function Region() {
   };
 
   const handlePrevious = () => {
-    navigate("/onboarding/login");
+    setIsExitModalOpen(true);
   };
+
+  const handleContinue = () => {
+    setIsExitModalOpen(false);
+  };
+
+  const handleExit = () => {
+    allowNavigationRef.current = true;
+
+    sessionStorage.removeItem(STORAGE_KEY);
+    setIsExitModalOpen(false);
+
+    navigate("/onboarding/login", {
+      replace: true,
+    });
+  };
+
+  useEffect(() => {
+    const guardKey = "regionExitGuard";
+
+    if (!window.history.state?.[guardKey]) {
+      window.history.pushState(
+        {
+          ...window.history.state,
+          [guardKey]: true,
+        },
+        "",
+        window.location.href,
+      );
+    }
+
+    const handlePopState = () => {
+      if (allowNavigationRef.current) {
+        return;
+      }
+
+      setIsExitModalOpen(true);
+
+      window.history.pushState(
+        {
+          ...window.history.state,
+          [guardKey]: true,
+        },
+        "",
+        window.location.href,
+      );
+    };
+
+    window.addEventListener(
+      "popstate",
+      handlePopState,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "popstate",
+        handlePopState,
+      );
+    };
+  }, []);
 
   const handleNext = () => {
     if (!canProceed) {
@@ -115,8 +184,7 @@ function Region() {
     const selectedDistrict =
       selectedRegion?.districts.find(
         (district) =>
-          district.code ===
-          selectedDistrictCode,
+          district.code === selectedDistrictCode,
       );
 
     if (!selectedRegion || !selectedDistrict) {
@@ -131,9 +199,10 @@ function Region() {
       }),
     );
 
+    allowNavigationRef.current = true;
     navigate("/onboarding/test/1");
   };
-
+  
   return (
     <main
       className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]"
@@ -251,6 +320,52 @@ function Region() {
           다음
         </button>
       </footer>
+          {isExitModalOpen && (
+            <div
+              className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 px-6"
+            role="presentation"
+            >
+              <section
+                className="w-full max-w-[310px] rounded-[20px] bg-white px-5 pb-4 pt-5 shadow-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="exit-modal-title"
+                aria-describedby="exit-modal-description"
+              >
+              <h2
+                id="exit-modal-title"
+                className="text-center text-xl font-bold text-black"
+              >
+                정말 나가실건가요? 😢
+              </h2>
+
+              <p
+                id="exit-modal-description"
+                className="mt-1 text-center text-sm text-[#B3B3B3]"
+              >
+                결과는 저장되지 않아요
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  className="h-[46px] rounded-[23px] bg-[#FFAC27] text-sm font-bold text-white shadow-[2px_3px_4px_rgba(138,62,15,0.2)]"
+                  onClick={handleContinue}
+                >
+                  계속하기
+              </button>
+
+              <button
+                type="button"
+                className="h-[46px] rounded-[23px] border border-[#FFAC27] bg-white text-sm font-bold text-[#FFAC27] shadow-[2px_3px_4px_rgba(138,62,15,0.12)]"
+                onClick={handleExit}
+              >
+                나가기
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
