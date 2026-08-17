@@ -11,14 +11,18 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.onboardingCompleted == false;
 
-      // Clients may not flip onboardingCompleted themselves (that must be
-      // done by trusted server-side logic, e.g. a Cloud Function); uid and
-      // email also can't be rewritten to values other than the caller's own.
+      // Clients may only flip onboardingCompleted from false to true (a
+      // one-time onboarding completion); flipping it back to false, or
+      // touching it once it's already true, is not allowed. uid and email
+      // also can't be rewritten to values other than the caller's own.
       allow update: if request.auth != null
         && request.auth.uid == uid
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
-        && request.resource.data.onboardingCompleted == resource.data.onboardingCompleted;
+        && (
+          request.resource.data.onboardingCompleted == resource.data.onboardingCompleted
+          || (resource.data.onboardingCompleted == false && request.resource.data.onboardingCompleted == true)
+        );
     }
 
     // Deny by default for any collection not explicitly allowed above.
