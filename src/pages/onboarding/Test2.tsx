@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ProgressBar from "../../components/onboarding/ProgressBar";
 import TestQuestionCard from "../../components/onboarding/TestQuestionCard";
-import { useWbtiAnswers } from "../../hooks/useWbtiAnswers";
+import { useOnboarding } from "../../contexts/OnboardingContext";
 import {
   TEST_PAGE_QUESTION_IDS,
   getQuestionsByIds,
@@ -16,7 +16,11 @@ const NEXT_PATH = "/onboarding/test/3";
 
 function Test2() {
   const navigate = useNavigate();
-  const { answers, selectAnswer, isPageComplete } = useWbtiAnswers();
+  const {
+    wbtiAnswers: answers,
+    selectWbtiAnswer: selectAnswer,
+    isWbtiPageComplete: isPageComplete,
+  } = useOnboarding();
   const questions = useMemo(() => getQuestionsByIds(QUESTION_IDS), []);
   const canProceed = isPageComplete(QUESTION_IDS);
 
