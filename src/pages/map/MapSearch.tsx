@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import PlaceThumbCard from "../../components/shared/PlaceThumbCard";
 import CategoryFilterTabs from "../../components/shared/CategoryFilterTabs";
@@ -6,12 +6,10 @@ import SearchBar from "../../components/map/SearchBar";
 import RecentSearchChips from "../../components/map/RecentSearchChips";
 import { useRecentSearches } from "../../hooks/useRecentSearches";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../../constants/categories";
-import {
-  getNearbyPlaces,
-  getPlacesByCategory,
-  searchPlaces,
-} from "../../data/mockPlaces";
-import type { PlaceCategoryCode } from "../../types/place";
+import { areaBasedList, searchKeyword } from "../../api/tourApi";
+import type { Place, PlaceCategoryCode } from "../../types/place";
+
+const NEARBY_LIMIT = 4;
 
 function MapSearch() {
   const [searchInput, setSearchInput] = useState("");
@@ -20,6 +18,16 @@ function MapSearch() {
   const [selectedCategory, setSelectedCategory] =
     useState<PlaceCategoryCode>(DEFAULT_CATEGORY);
   const { searches: recentSearches, addSearch } = useRecentSearches();
+
+  const [categoryPlaces, setCategoryPlaces] = useState<Place[]>([]);
+  const [isBrowseLoading, setIsBrowseLoading] = useState(false);
+  const [browseError, setBrowseError] = useState<string | null>(null);
+
+  const [matchedPlace, setMatchedPlace] = useState<Place | undefined>();
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const isSearching = submittedTerm !== "";
 
   const handleSearchSubmit = (term: string) => {
     const trimmed = term.trim();
@@ -32,11 +40,62 @@ function MapSearch() {
     addSearch(trimmed);
   };
 
-  const isSearching = submittedTerm !== "";
-  const matchedPlace = isSearching ? searchPlaces(submittedTerm)[0] : undefined;
-  const nearbyPlaces = isSearching
-    ? getNearbyPlaces(matchedPlace?.id ?? "", selectedCategory)
-    : [];
+  // 카테고리가 바뀔 때마다(초기 진입 포함) 해당 카테고리 목록을 조회한다.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    setIsBrowseLoading(true);
+    setBrowseError(null);
+
+    areaBasedList({ category: selectedCategory, signal: controller.signal })
+      .then((result) => setCategoryPlaces(result.places))
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        console.error("장소 목록 조회 실패:", error);
+        setBrowseError("장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      })
+      .finally(() => setIsBrowseLoading(false));
+
+    return () => controller.abort();
+  }, [selectedCategory]);
+
+  // 검색어가 제출됐을 때만 검색을 실행한다.
+  useEffect(() => {
+    if (!isSearching) {
+      setMatchedPlace(undefined);
+      setSearchError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setIsSearchLoading(true);
+    setSearchError(null);
+
+    searchKeyword({
+      keyword: submittedTerm,
+      category: selectedCategory,
+      signal: controller.signal,
+    })
+      .then((result) => setMatchedPlace(result.places[0]))
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        console.error("장소 검색 실패:", error);
+        setSearchError("검색에 실패했어요. 잠시 후 다시 시도해 주세요.");
+      })
+      .finally(() => setIsSearchLoading(false));
+
+    return () => controller.abort();
+  }, [submittedTerm, selectedCategory, isSearching]);
+
+  // 위치 기반 "근처" 개념이 아직 없어서, 같은 카테고리 목록에서 검색된 장소만 제외한 나머지를 보여준다.
+  const nearbyPlaces = categoryPlaces
+    .filter((place) => place.id !== matchedPlace?.id)
+    .slice(0, NEARBY_LIMIT);
 
   return (
     <main
@@ -86,7 +145,11 @@ function MapSearch() {
               <h2 className="mb-3 text-[20px] font-semibold text-[#754308]">
                 {`"${submittedTerm}" 검색 결과`}
               </h2>
-              {matchedPlace ? (
+              {isSearchLoading ? (
+                <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+              ) : searchError ? (
+                <p className="text-sm font-bold text-red-500">{searchError}</p>
+              ) : matchedPlace ? (
                 <PlaceThumbCard place={matchedPlace} />
               ) : (
                 <p className="text-sm text-[#B3B3B3]">
@@ -99,11 +162,17 @@ function MapSearch() {
               <h2 className="mb-3 text-[20px] font-semibold text-[#754308]">
                 근처에서 가볼만한 곳
               </h2>
-              <div className="flex flex-col gap-4">
-                {nearbyPlaces.map((place) => (
-                  <PlaceThumbCard key={place.id} place={place} />
-                ))}
-              </div>
+              {isBrowseLoading ? (
+                <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+              ) : browseError ? (
+                <p className="text-sm font-bold text-red-500">{browseError}</p>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {nearbyPlaces.map((place) => (
+                    <PlaceThumbCard key={place.id} place={place} />
+                  ))}
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -111,11 +180,17 @@ function MapSearch() {
             <h2 className="mb-3 text-[20px] font-semibold text-[#754308]">
               카테고리 추천 장소
             </h2>
-            <div className="flex flex-col gap-4">
-              {getPlacesByCategory(selectedCategory).map((place) => (
-                <PlaceThumbCard key={place.id} place={place} />
-              ))}
-            </div>
+            {isBrowseLoading ? (
+              <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+            ) : browseError ? (
+              <p className="text-sm font-bold text-red-500">{browseError}</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {categoryPlaces.map((place) => (
+                  <PlaceThumbCard key={place.id} place={place} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
