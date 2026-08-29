@@ -82,15 +82,19 @@ interface TourListResult {
 }
 
 /**
- * cat2가 아직 정확히 안 채워진 카테고리(산림/바다, 카페)는 요청에 cat1까지만 실리므로,
- * 서버가 완벽하게 걸러주지 못했을 가능성을 대비해 응답 원본 item의 cat1으로 한 번 더 확인한다.
- * cat1이 지정 안 된 필터(전체, 체험/쇼핑처럼 겹칠 상대가 없는 카테고리)는 그대로 통과시킨다.
+ * TourAPI 목록 조회는 cat3를 단일 값으로만 받기 때문에(산림/바다, 카페처럼 cat3가 여러 개인
+ * 카테고리는) 요청에는 cat1(+cat2)까지만 싣고, 응답을 받은 뒤 cat3In 목록으로 한 번 더 걸러낸다.
+ * cat3In이 없는 필터(전체, 체험/쇼핑처럼 겹칠 상대가 없는 카테고리)는 cat1만 확인하거나 그대로 통과시킨다.
  */
 function matchesCategoryFilter(
   item: TourApiRawItem,
   category: PlaceCategoryCode,
 ): boolean {
   const filter = CATEGORY_FILTERS[category];
+
+  if (filter.cat3In) {
+    return item.cat3 != null && filter.cat3In.includes(item.cat3);
+  }
 
   if (!filter.cat1) {
     return true;
