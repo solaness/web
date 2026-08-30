@@ -9,7 +9,7 @@ function SunshineScoreCard({
 }: SunshineScoreCardProps) {
   return (
     <article className="mx-auto flex h-[383px] w-full max-w-[370px] flex-col rounded-[8px] border border-white bg-white px-4 pb-5 pt-5 shadow-[0_0_4px_5px_rgba(250,199,117,0.25)]">
-      <h2 className="text-[20px] font-bold leading-[22px] text-black">
+      <h2 className="text-[20px] font-bold leading-[22px] text-[#754308]">
         오늘의 햇빛 점수
       </h2>
 

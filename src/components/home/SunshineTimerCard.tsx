@@ -30,7 +30,7 @@ function SunshineTimerCard({
 
   return (
     <article className="mx-auto flex h-[383px] w-full max-w-[370px] flex-col rounded-[8px] border border-white bg-white px-4 pb-5 pt-4 shadow-[0_0_4px_5px_rgba(250,199,117,0.25)]">
-      <h2 className="text-[20px] font-bold leading-[22px] text-black">
+      <h2 className="text-[20px] font-bold leading-[22px] text-[#754308]">
         권장 햇빛 충전 시간
       </h2>
 
@@ -56,11 +56,11 @@ function SunshineTimerCard({
           {remainingMinutes}
         </strong>
 
-        <span className="mb-[7px] ml-1 text-[16px] font-semibold leading-[22px] text-black">
+        <span className="mb-[7px] ml-1 text-[16px] font-semibold leading-[22px] text-[#754308]">
           분 남음
         </span>
 
-        <div className="mb-[7px] ml-auto flex items-center gap-2 text-[20px] font-medium leading-[22px] text-black">
+        <div className="mb-[7px] ml-auto flex items-center gap-2 text-[20px] font-medium leading-[22px] text-[#754308]">
           <span>UV {uvIndex}</span>
           <span aria-hidden="true">·</span>
           <span>{temperature}°C</span>
