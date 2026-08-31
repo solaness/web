@@ -1,105 +1,33 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RegionDropdown from "../../components/onboarding/RegionDropdown";
 import { useAuth } from "../../contexts/AuthContext";
+import { useOnboarding } from "../../contexts/OnboardingContext";
 import { REGIONS } from "../../data/regions";
-
-interface StoredRegion {
-  provinceCode: string;
-  districtCode: string;
-}
-
-const STORAGE_KEY = "onboardingRegion";
-
-const EMPTY_REGION: StoredRegion = {
-  provinceCode: "",
-  districtCode: "",
-};
-
-function getStoredRegion(): StoredRegion {
-  const storedValue =
-    sessionStorage.getItem(STORAGE_KEY);
-
-  if (!storedValue) {
-    return EMPTY_REGION;
-  }
-
-  try {
-    const parsedValue = JSON.parse(
-      storedValue,
-    ) as Partial<StoredRegion>;
-
-    const provinceCode =
-      parsedValue.provinceCode ?? "";
-
-    const districtCode =
-      parsedValue.districtCode ?? "";
-
-    const matchedRegion = REGIONS.find(
-      (region) =>
-        region.code === provinceCode,
-    );
-
-    if (!matchedRegion) {
-      return EMPTY_REGION;
-    }
-
-    const isValidDistrict =
-      matchedRegion.districts.some(
-        (district) =>
-          district.code === districtCode,
-      );
-
-    return {
-      provinceCode,
-      districtCode: isValidDistrict
-        ? districtCode
-        : "",
-    };
-  } catch {
-    return EMPTY_REGION;
-  }
-}
 
 function Region() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const [isExitModalOpen, setIsExitModalOpen] =
-    useState(false);
+  const { region, setRegion } = useOnboarding();
+
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   const allowNavigationRef = useRef(false);
 
-  const storedRegion = useMemo(
-    () => getStoredRegion(),
-    [],
+  const [selectedRegionCode, setSelectedRegionCode] = useState(
+    region.provinceCode,
   );
 
-  const [
-    selectedRegionCode,
-    setSelectedRegionCode,
-  ] = useState(storedRegion.provinceCode);
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState(
+    region.districtCode,
+  );
 
-  const [
-    selectedDistrictCode,
-    setSelectedDistrictCode,
-  ] = useState(storedRegion.districtCode);
-
-  const displayName =
-    user?.displayName?.trim() || "김솜솜";
+  const displayName = user?.displayName?.trim() || "김솜솜";
 
   const canProceed =
-    selectedRegionCode.length > 0 &&
-    selectedDistrictCode.length > 0;
+    selectedRegionCode.length > 0 && selectedDistrictCode.length > 0;
 
-  const handleRegionChange = (
-    regionCode: string,
-  ) => {
+  const handleRegionChange = (regionCode: string) => {
     if (regionCode === selectedRegionCode) {
       return;
     }
@@ -119,7 +47,7 @@ function Region() {
   const handleExit = () => {
     allowNavigationRef.current = true;
 
-    sessionStorage.removeItem(STORAGE_KEY);
+    setRegion({ provinceCode: "", districtCode: "" });
     setIsExitModalOpen(false);
 
     navigate("/onboarding/login", {
@@ -158,16 +86,10 @@ function Region() {
       );
     };
 
-    window.addEventListener(
-      "popstate",
-      handlePopState,
-    );
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
-      window.removeEventListener(
-        "popstate",
-        handlePopState,
-      );
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
 
@@ -177,38 +99,31 @@ function Region() {
     }
 
     const selectedRegion = REGIONS.find(
-      (region) =>
-        region.code === selectedRegionCode,
+      (regionItem) => regionItem.code === selectedRegionCode,
     );
 
-    const selectedDistrict =
-      selectedRegion?.districts.find(
-        (district) =>
-          district.code === selectedDistrictCode,
-      );
+    const selectedDistrict = selectedRegion?.districts.find(
+      (district) => district.code === selectedDistrictCode,
+    );
 
     if (!selectedRegion || !selectedDistrict) {
       return;
     }
 
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        provinceCode: selectedRegion.code,
-        districtCode: selectedDistrict.code,
-      }),
-    );
+    setRegion({
+      provinceCode: selectedRegion.code,
+      districtCode: selectedDistrict.code,
+    });
 
     allowNavigationRef.current = true;
     navigate("/onboarding/test/1");
   };
-  
+
   return (
     <main
       className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]"
       style={{
-        fontFamily:
-          '"Pretendard Variable", Pretendard, sans-serif',
+        fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}
     >
       {/* 왼쪽 위 배경 장식 */}
@@ -290,18 +205,10 @@ function Region() {
       <section className="relative z-10 mt-6 min-h-0 flex-1 overflow-y-auto px-[19px] pb-4">
         <RegionDropdown
           regions={REGIONS}
-          selectedRegionCode={
-            selectedRegionCode
-          }
-          selectedDistrictCode={
-            selectedDistrictCode
-          }
-          onRegionChange={
-            handleRegionChange
-          }
-          onDistrictChange={
-            setSelectedDistrictCode
-          }
+          selectedRegionCode={selectedRegionCode}
+          selectedDistrictCode={selectedDistrictCode}
+          onRegionChange={handleRegionChange}
+          onDistrictChange={setSelectedDistrictCode}
         />
       </section>
 
@@ -320,39 +227,40 @@ function Region() {
           다음
         </button>
       </footer>
-          {isExitModalOpen && (
-            <div
-              className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 px-6"
-            role="presentation"
+
+      {isExitModalOpen && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 px-6"
+          role="presentation"
+        >
+          <section
+            className="w-full max-w-[310px] rounded-[20px] bg-white px-5 pb-4 pt-5 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="exit-modal-title"
+            aria-describedby="exit-modal-description"
+          >
+            <h2
+              id="exit-modal-title"
+              className="text-center text-xl font-bold text-black"
             >
-              <section
-                className="w-full max-w-[310px] rounded-[20px] bg-white px-5 pb-4 pt-5 shadow-xl"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="exit-modal-title"
-                aria-describedby="exit-modal-description"
-              >
-              <h2
-                id="exit-modal-title"
-                className="text-center text-xl font-bold text-black"
-              >
-                정말 나가실건가요? 😢
-              </h2>
+              정말 나가실건가요? 😢
+            </h2>
 
-              <p
-                id="exit-modal-description"
-                className="mt-1 text-center text-sm text-[#B3B3B3]"
-              >
-                결과는 저장되지 않아요
-              </p>
+            <p
+              id="exit-modal-description"
+              className="mt-1 text-center text-sm text-[#B3B3B3]"
+            >
+              결과는 저장되지 않아요
+            </p>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  className="h-[46px] rounded-[23px] bg-[#FFAC27] text-sm font-bold text-white shadow-[2px_3px_4px_rgba(138,62,15,0.2)]"
-                  onClick={handleContinue}
-                >
-                  계속하기
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="h-[46px] rounded-[23px] bg-[#FFAC27] text-sm font-bold text-white shadow-[2px_3px_4px_rgba(138,62,15,0.2)]"
+                onClick={handleContinue}
+              >
+                계속하기
               </button>
 
               <button
