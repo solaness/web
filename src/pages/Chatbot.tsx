@@ -1,31 +1,69 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { areaBasedList } from "../api/tourApi";
 import IconChevronLeft from "../assets/icons/icon-chevron-left.svg?react";
 import IconPin from "../assets/icons/icon-pin.svg?react";
 import solnyangHelloSun from "../assets/images/solnyang-hello-sun.png";
 import solnyangProfile from "../assets/images/solnyang-profile.png";
 import BackgroundBlobs from "../components/shared/BackgroundBlobs";
 import { CHATBOT_MOODS } from "../data/chatbotMoods";
-import type { Place } from "../types/place";
+import type { Place, PlaceCategoryCode } from "../types/place";
 
-const FOLLOWUP_OPTIONS = [
+// 추천마다 매번 새 API 호출이 생기므로, 호출 횟수는 선택당 1번으로 고정한다.
+// cafe처럼 cat3(소분류)로 클라이언트에서 한 번 더 걸러내는 카테고리는 표본이 작으면 결과가 자주 비므로
+// numOfRows를 넉넉히 잡아서, 같은 1회 호출 안에서 매칭될 확률을 높인다.
+const RECOMMENDATION_FETCH_SIZE = 30;
+const RECOMMENDATION_COUNT = 2;
+// 같은 감정으로 "더 추천"은 최초 1회 + 최대 3회 추가까지만 허용한다.
+const MAX_BATCHES_PER_ROUND = 4;
+
+const MORE_OPTIONS = [
   { id: "more", label: "응!" },
-  { id: "done", label: "아니 괜찮아!" },
+  { id: "no_more", label: "아니!" },
 ] as const;
 
-type FollowupId = (typeof FOLLOWUP_OPTIONS)[number]["id"];
+type MoreId = (typeof MORE_OPTIONS)[number]["id"];
+
+const RESTART_OPTIONS = [
+  { id: "restart", label: "응!" },
+  { id: "end", label: "아니!" },
+] as const;
+
+type RestartId = (typeof RESTART_OPTIONS)[number]["id"];
+type RecommendationStatus = "loading" | "success" | "error";
+
+interface RecommendationBatch {
+  id: number;
+  recommendations: Place[];
+  status: RecommendationStatus;
+  moreId: MoreId | null;
+  moreAt: string | null;
+  restartId: RestartId | null;
+  restartAt: string | null;
+}
+
+function createBatch(id: number): RecommendationBatch {
+  return {
+    id,
+    recommendations: [],
+    status: "loading",
+    moreId: null,
+    moreAt: null,
+    restartId: null,
+    restartAt: null,
+  };
+}
 
 interface ChatRound {
   id: number;
   moodId: string | null;
   moodAt: string | null;
-  followupId: FollowupId | null;
-  followupAt: string | null;
+  batches: RecommendationBatch[];
 }
 
 function createRound(id: number): ChatRound {
-  return { id, moodId: null, moodAt: null, followupId: null, followupAt: null };
+  return { id, moodId: null, moodAt: null, batches: [] };
 }
 
 function formatToday(): string {
@@ -114,7 +152,7 @@ function RecommendationThumb({ place }: { place: Place }) {
   );
 }
 
-/** 기분/후속 질문 공용 선택지 박스. 한 번 고르면(selectedId가 생기면) 그 라운드의 선택지는 고정되어 더 이상 클릭할 수 없다. */
+/** 기분/후속 질문 공용 선택지 박스. 한 번 고르면(selectedId가 생기면) 그 선택지는 고정되어 더 이상 클릭할 수 없다. */
 function ChoiceBox<T extends string>({
   options,
   selectedId,
@@ -154,16 +192,96 @@ function ChoiceBox<T extends string>({
   );
 }
 
+function RecommendationBatchBlock({
+  round,
+  batch,
+  onSelectMore,
+  onSelectRestart,
+}: {
+  round: ChatRound;
+  batch: RecommendationBatch;
+  onSelectMore: (roundId: number, batchId: number, moreId: MoreId) => void;
+  onSelectRestart: (roundId: number, batchId: number, restartId: RestartId) => void;
+}) {
+  // 같은 감정으로 더 추천받기는 라운드당 최대 MAX_BATCHES_PER_ROUND번까지만 — 다 썼으면
+  // "더 추천해줄까?" 질문 없이 바로 "감정을 다시 선택할래?"로 넘어간다.
+  const canOfferMore = round.batches.length < MAX_BATCHES_PER_ROUND;
+  const showRestartQuestion = !canOfferMore || batch.moreId === "no_more";
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-2xl border border-[#FFAC27] bg-white p-3">
+        <p className="mb-2 text-sm font-bold text-[#F78903]">오늘의 추천</p>
+        {batch.status === "loading" ? (
+          <p className="py-2 text-sm text-[#B3B3B3]">불러오는 중...</p>
+        ) : batch.status === "error" ? (
+          <p className="py-2 text-sm font-bold text-red-500">
+            장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : batch.recommendations.length === 0 ? (
+          <p className="py-2 text-sm text-[#B3B3B3]">
+            추천할 만한 장소를 찾지 못했어요.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {batch.recommendations.map((place) => (
+              <RecommendationThumb key={place.id} place={place} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {canOfferMore && (
+        <>
+          <BotBubble>이런 비슷한 장소를 더 추천해줄까?</BotBubble>
+
+          <ChoiceBox
+            options={MORE_OPTIONS}
+            selectedId={batch.moreId}
+            onSelect={(moreId) => onSelectMore(round.id, batch.id, moreId)}
+          />
+
+          {batch.moreId && (
+            <UserBubble at={batch.moreAt}>
+              {MORE_OPTIONS.find((option) => option.id === batch.moreId)?.label}
+            </UserBubble>
+          )}
+        </>
+      )}
+
+      {showRestartQuestion && (
+        <>
+          <BotBubble>그럼 감정을 다시 선택할래?</BotBubble>
+
+          <ChoiceBox
+            options={RESTART_OPTIONS}
+            selectedId={batch.restartId}
+            onSelect={(restartId) => onSelectRestart(round.id, batch.id, restartId)}
+          />
+
+          {batch.restartId && (
+            <UserBubble at={batch.restartAt}>
+              {RESTART_OPTIONS.find((option) => option.id === batch.restartId)?.label}
+            </UserBubble>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ChatRoundBlock({
   round,
   showIntro,
   onSelectMood,
-  onSelectFollowup,
+  onSelectMore,
+  onSelectRestart,
 }: {
   round: ChatRound;
   showIntro: boolean;
   onSelectMood: (roundId: number, moodId: string) => void;
-  onSelectFollowup: (roundId: number, followupId: FollowupId) => void;
+  onSelectMore: (roundId: number, batchId: number, moreId: MoreId) => void;
+  onSelectRestart: (roundId: number, batchId: number, restartId: RestartId) => void;
 }) {
   const mood = CHATBOT_MOODS.find((item) => item.id === round.moodId) ?? null;
 
@@ -188,28 +306,15 @@ function ChatRoundBlock({
             <BotBubble key={line}>{line}</BotBubble>
           ))}
 
-          <div className="rounded-2xl border border-[#FFAC27] bg-white p-3">
-            <p className="mb-2 text-sm font-bold text-[#F78903]">오늘의 추천</p>
-            <div className="grid grid-cols-2 gap-2">
-              {mood.recommendations.map((place) => (
-                <RecommendationThumb key={place.id} place={place} />
-              ))}
-            </div>
-          </div>
-
-          <BotBubble>추천 이후에 추가로 더 추천해줄까?</BotBubble>
-
-          <ChoiceBox
-            options={FOLLOWUP_OPTIONS}
-            selectedId={round.followupId}
-            onSelect={(followupId) => onSelectFollowup(round.id, followupId)}
-          />
-
-          {round.followupId && (
-            <UserBubble at={round.followupAt}>
-              {FOLLOWUP_OPTIONS.find((option) => option.id === round.followupId)?.label}
-            </UserBubble>
-          )}
+          {round.batches.map((batch) => (
+            <RecommendationBatchBlock
+              key={batch.id}
+              round={round}
+              batch={batch}
+              onSelectMore={onSelectMore}
+              onSelectRestart={onSelectRestart}
+            />
+          ))}
         </>
       )}
     </div>
@@ -221,7 +326,41 @@ function Chatbot() {
   const [started, setStarted] = useState(false);
   const [rounds, setRounds] = useState<ChatRound[]>([]);
 
-  const isFinished = rounds.at(-1)?.followupId === "done";
+  const lastRound = rounds.at(-1);
+  const isFinished = lastRound?.batches.at(-1)?.restartId === "end";
+
+  // pageNo를 배치마다 다르게 줘서 "더 추천"이 매번 같은 1페이지를 반복 조회하지 않게 한다
+  // (같은 페이지만 계속 받으면 excludeIds로 걸러낼 때 카페처럼 표본이 적은 카테고리는 금방 바닥난다).
+  const fetchRecommendations = (
+    category: PlaceCategoryCode,
+    excludeIds: string[],
+    pageNo: number,
+  ): Promise<Place[]> =>
+    areaBasedList({ category, numOfRows: RECOMMENDATION_FETCH_SIZE, pageNo }).then(
+      (result) =>
+        result.places
+          .filter((place) => !excludeIds.includes(place.id))
+          .slice(0, RECOMMENDATION_COUNT),
+    );
+
+  const updateBatch = (
+    roundId: number,
+    batchId: number,
+    patch: Partial<RecommendationBatch>,
+  ) => {
+    setRounds((prev) =>
+      prev.map((round) =>
+        round.id !== roundId
+          ? round
+          : {
+              ...round,
+              batches: round.batches.map((batch) =>
+                batch.id === batchId ? { ...batch, ...patch } : batch,
+              ),
+            },
+      ),
+    );
+  };
 
   const handleStart = () => {
     setStarted(true);
@@ -229,30 +368,102 @@ function Chatbot() {
   };
 
   const handleSelectMood = (roundId: number, moodId: string) => {
+    const mood = CHATBOT_MOODS.find((item) => item.id === moodId);
+    if (!mood) {
+      return;
+    }
+
     setRounds((prev) =>
       prev.map((round) =>
         round.id === roundId && round.moodId === null
-          ? { ...round, moodId, moodAt: formatNowTime() }
+          ? { ...round, moodId, moodAt: formatNowTime(), batches: [createBatch(0)] }
           : round,
       ),
     );
+
+    fetchRecommendations(mood.category, [], 1)
+      .then((places) =>
+        updateBatch(roundId, 0, { recommendations: places, status: "success" }),
+      )
+      .catch((error) => {
+        console.error("추천 장소 조회 실패:", error);
+        updateBatch(roundId, 0, { status: "error" });
+      });
   };
 
-  const handleSelectFollowup = (roundId: number, followupId: FollowupId) => {
-    setRounds((prev) => {
-      const updated = prev.map((round) =>
-        round.id === roundId && round.followupId === null
-          ? { ...round, followupId, followupAt: formatNowTime() }
-          : round,
-      );
+  const handleSelectMore = (roundId: number, batchId: number, moreId: MoreId) => {
+    setRounds((prev) =>
+      prev.map((round) =>
+        round.id !== roundId
+          ? round
+          : {
+              ...round,
+              batches: round.batches.map((batch) =>
+                batch.id === batchId && batch.moreId === null
+                  ? { ...batch, moreId, moreAt: formatNowTime() }
+                  : batch,
+              ),
+            },
+      ),
+    );
 
-      if (followupId === "more") {
-        const nextId = (prev.at(-1)?.id ?? 0) + 1;
-        return [...updated, createRound(nextId)];
-      }
+    if (moreId !== "more") {
+      return;
+    }
 
-      return updated;
-    });
+    const round = rounds.find((item) => item.id === roundId);
+    const mood = round && CHATBOT_MOODS.find((item) => item.id === round.moodId);
+    if (!round || !mood) {
+      return;
+    }
+
+    const excludeIds = round.batches.flatMap((batch) =>
+      batch.recommendations.map((place) => place.id),
+    );
+    const nextBatchId = (round.batches.at(-1)?.id ?? -1) + 1;
+    const nextPageNo = round.batches.length + 1;
+
+    setRounds((prev) =>
+      prev.map((item) =>
+        item.id === roundId
+          ? { ...item, batches: [...item.batches, createBatch(nextBatchId)] }
+          : item,
+      ),
+    );
+
+    fetchRecommendations(mood.category, excludeIds, nextPageNo)
+      .then((places) =>
+        updateBatch(roundId, nextBatchId, { recommendations: places, status: "success" }),
+      )
+      .catch((error) => {
+        console.error("추천 장소 조회 실패:", error);
+        updateBatch(roundId, nextBatchId, { status: "error" });
+      });
+  };
+
+  const handleSelectRestart = (
+    roundId: number,
+    batchId: number,
+    restartId: RestartId,
+  ) => {
+    setRounds((prev) =>
+      prev.map((round) =>
+        round.id !== roundId
+          ? round
+          : {
+              ...round,
+              batches: round.batches.map((batch) =>
+                batch.id === batchId && batch.restartId === null
+                  ? { ...batch, restartId, restartAt: formatNowTime() }
+                  : batch,
+              ),
+            },
+      ),
+    );
+
+    if (restartId === "restart") {
+      setRounds((prev) => [...prev, createRound((prev.at(-1)?.id ?? 0) + 1)]);
+    }
   };
 
   return (
@@ -328,7 +539,8 @@ function Chatbot() {
               round={round}
               showIntro={index === 0}
               onSelectMood={handleSelectMood}
-              onSelectFollowup={handleSelectFollowup}
+              onSelectMore={handleSelectMore}
+              onSelectRestart={handleSelectRestart}
             />
           ))}
 
