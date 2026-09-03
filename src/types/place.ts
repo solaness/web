@@ -21,3 +21,12 @@ export interface Place {
   lat?: number;
   lng?: number;
 }
+
+/** 지도 상세 페이지(src/pages/map/MapDetail.tsx)용 상세 정보. */
+export interface PlaceDetail extends Place {
+  /** 매칭되는 카테고리 전부(뱃지 표시용). 매칭이 안 되면 빈 배열. */
+  categories: PlaceCategoryCode[];
+  overview: string;
+  homepageUrl: string;
+  tel?: string;
+}
