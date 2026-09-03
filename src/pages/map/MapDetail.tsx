@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
 import IconBookmark from "../../assets/icons/icon-bookmark.svg?react";
+import IconSun from "../../assets/icons/icon-sun.svg?react";
 import DetailHeroImage from "../../components/map/DetailHeroImage";
 import PlaceInfoHeader from "../../components/map/PlaceInfoHeader";
 import ActionButtonBar from "../../components/map/ActionButtonBar";
@@ -130,16 +131,16 @@ function MapDetail() {
           >
             <div className="mx-auto h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" />
 
-            <PlaceInfoHeader
-              place={place}
-              sunScore={sunScore}
-              rating={null}
-              onShare={handleShare}
-            />
+            <PlaceInfoHeader place={place} rating={null} onShare={handleShare} />
 
             {linkCopied && (
               <p className="text-xs text-[#B3B3B3]">링크를 복사했어요</p>
             )}
+
+            <span className="flex items-center gap-1 text-[15px] font-semibold text-[#FFAC27]">
+              <IconSun className="h-4 w-4" />
+              햇빛 점수 {sunScore}점
+            </span>
 
             <section className="flex flex-col items-start gap-1">
               <h2 className="text-lg font-bold text-[#F78903]">

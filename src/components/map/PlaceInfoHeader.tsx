@@ -2,7 +2,6 @@ import IconPin from "../../assets/icons/icon-pin.svg?react";
 import IconStar from "../../assets/icons/icon-star.svg?react";
 import IconLink from "../../assets/icons/icon-link.svg?react";
 import IconShare from "../../assets/icons/icon-share.svg?react";
-import IconSun from "../../assets/icons/icon-sun.svg?react";
 import { CATEGORIES } from "../../constants/categories";
 import type { PlaceDetail } from "../../types/place";
 
@@ -13,14 +12,13 @@ interface PlaceRating {
 
 interface PlaceInfoHeaderProps {
   place: PlaceDetail;
-  sunScore: number;
   /** 평점 데이터 출처(구글 플레이스 등)가 아직 없어서 null이면 별점 줄 자체를 숨긴다. */
   rating: PlaceRating | null;
   onShare: () => void;
 }
 
-/** 장소명 + 카테고리 뱃지/햇빛 점수 + 주소/평점/공유 + 사이트 링크. */
-function PlaceInfoHeader({ place, sunScore, rating, onShare }: PlaceInfoHeaderProps) {
+/** 장소명 + 카테고리 뱃지 + 주소/평점/공유 + 사이트 링크. */
+function PlaceInfoHeader({ place, rating, onShare }: PlaceInfoHeaderProps) {
   const badgeLabels = place.categories
     .map((code) => CATEGORIES.find((category) => category.code === code)?.label)
     .filter((label): label is string => Boolean(label));
@@ -31,21 +29,18 @@ function PlaceInfoHeader({ place, sunScore, rating, onShare }: PlaceInfoHeaderPr
         {place.name}
       </h1>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {badgeLabels.map((label) => (
-          <span
-            key={label}
-            className="rounded-lg border border-[#FFAC27] bg-[#FFFAEB] px-2.5 py-1 text-[13px] font-semibold text-[#754308]"
-          >
-            {label}
-          </span>
-        ))}
-
-        <span className="flex items-center gap-1 text-[15px] font-semibold text-[#FFAC27]">
-          <IconSun className="h-4 w-4" />
-          햇빛 점수 {sunScore}점
-        </span>
-      </div>
+      {badgeLabels.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {badgeLabels.map((label) => (
+            <span
+              key={label}
+              className="rounded-lg border border-[#FFAC27] bg-[#FFFAEB] px-2.5 py-1 text-[13px] font-semibold text-[#754308]"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <IconPin className="h-[29px] w-[21px] shrink-0" />
