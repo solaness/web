@@ -59,16 +59,16 @@ function SunshineCardSlider() {
     >
       <div
         ref={sliderRef}
-        className="flex w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]"
         onScroll={handleScroll}
       >
         {/* 첫 번째 카드 */}
-        <div className="w-full shrink-0 snap-center">
+        <div className="w-full shrink-0 snap-center py-[8px]">
           <SunshineTimerCard />
         </div>
 
         {/* 두 번째 카드 */}
-        <div className="w-full shrink-0 snap-center">
+        <div className="w-full shrink-0 snap-center py-[8px]">
           <SunshineScoreCard />
         </div>
       </div>

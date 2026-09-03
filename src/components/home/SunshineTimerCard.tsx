@@ -13,74 +13,90 @@ function SunshineTimerCard({
   uvIndex = 3,
   temperature = 24,
 }: SunshineTimerCardProps) {
-  const completedMinutes = Math.max(
-    recommendedMinutes - remainingMinutes,
-    0,
+  const safeRecommendedMinutes = Math.max(recommendedMinutes, 1);
+
+  const remainingProgress = Math.min(
+    Math.max(remainingMinutes / safeRecommendedMinutes, 0),
+    1,
   );
 
-  const progress = Math.min(
-    Math.max(
-      (completedMinutes /
-        recommendedMinutes) *
-        100,
-      0,
-    ),
-    100,
-  );
+  const circleRadius = 79;
+  const circleLength = 2 * Math.PI * circleRadius;
+  const progressLength = circleLength * remainingProgress;
 
   return (
-    <article className="mx-auto flex h-[383px] w-full max-w-[370px] flex-col rounded-[8px] border border-white bg-white px-4 pb-5 pt-4 shadow-[0_0_4px_5px_rgba(250,199,117,0.25)]">
-      <h2 className="text-[20px] font-bold leading-[22px] text-[#754308]">
+    <article
+      className="mx-auto flex h-[383px] w-full max-w-[370px] flex-col rounded-[8px] border border-[#FFF1D6] bg-white px-4 pb-4 pt-4"
+      style={{
+        boxShadow:
+          "0 0 5px 4px rgba(250, 199, 117, 0.45), 0 4px 8px rgba(138, 62, 15, 0.12)",
+      }}
+    >
+      <h2 className="text-[21px] font-bold leading-[22px] text-[#754308]">
         권장 햇빛 충전 시간
       </h2>
 
-      {/*
-        <div className="mt-4 flex flex-1 items-center justify-center">
-        <img
-            src={timerGraphic}
-            alt=""
-            className="h-[153px] w-[253px] object-contain"
-        />
-        </div>
-      */ }
-
-      <div className="mt-4 flex flex-1 items-center justify-center">
+        <div className="flex flex-1 flex-col items-center justify-center">
         <div
-          className="h-[153px] w-[253px] bg-[#D9D9D9]"
-          aria-hidden="true"
-        />
-      </div>
+          className="relative h-[224.374px] w-[224.374px]"
+          role="progressbar"
+          aria-label="남은 햇빛 충전 시간"
+          aria-valuemin={0}
+          aria-valuemax={safeRecommendedMinutes}
+          aria-valuenow={remainingMinutes}
+        >
+          <svg
+            viewBox="0 0 181.555 181.555"
+            className="h-full w-full -rotate-90"
+            aria-hidden="true"
+          >
+            {/* 연한 배경 원 */}
+            <circle
+              cx="90.7775"
+              cy="90.7775"
+              r={circleRadius}
+              fill="none"
+              stroke="#FFF4D9"
+              strokeWidth="20"
+            />
 
-      <div className="flex items-end">
-        <strong className="text-[80px] font-bold leading-none text-[#FFAC27]">
-          {remainingMinutes}
-        </strong>
+            {/* 남은 시간 진행 막대 */}
+            {remainingProgress > 0 && (
+              <circle
+                cx="90.7775"
+                cy="90.7775"
+                r={circleRadius}
+                fill="none"
+                stroke="#FFDE96"
+                strokeWidth="20"
+                strokeLinecap="round"
+                strokeDasharray={`${progressLength} ${circleLength}`}
+                className="transition-[stroke-dasharray] duration-500 ease-out"
+              />
+            )}
+          </svg>
 
-        <span className="mb-[7px] ml-1 text-[16px] font-semibold leading-[22px] text-[#754308]">
-          분 남음
-        </span>
+          <strong
+  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[64px] font-bold leading-[22px] tracking-[-3px] text-[#FD9D2D]"
+  
+>
+  {remainingMinutes}
+</strong>
+        </div>
 
-        <div className="mb-[7px] ml-auto flex items-center gap-2 text-[20px] font-medium leading-[22px] text-[#754308]">
+        <div className="mt-3 flex items-center justify-center gap-2 text-[19px] font-bold leading-[22px] text-[#754308]">
           <span>UV {uvIndex}</span>
           <span aria-hidden="true">·</span>
           <span>{temperature}°C</span>
         </div>
-      </div>
 
-      <div
-        className="relative mt-3 h-[20px] w-full overflow-hidden rounded-[10px] border-[3px] border-[#FFAC27] bg-white shadow-[2px_2px_4px_rgba(138,62,15,0.25)]"
-        role="progressbar"
-        aria-label="햇빛 충전 진행률"
-        aria-valuemin={0}
-        aria-valuemax={recommendedMinutes}
-        aria-valuenow={completedMinutes}
-      >
         <div
-          className="absolute inset-y-0 left-0 rounded-r-[10px] bg-[#FAC775] transition-[width] duration-300"
-          style={{
-            width: `${progress}%`,
-          }}
-        />
+          className="mt-3 flex items-center justify-center gap-2"
+          aria-hidden="true"
+        >
+          <span className="h-[6px] w-[6px] rounded-full bg-[#FFAC27]" />
+          <span className="h-[6px] w-[6px] rounded-full border border-[#FFAC27] bg-white" />
+        </div>
       </div>
     </article>
   );

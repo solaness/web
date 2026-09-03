@@ -1,5 +1,6 @@
 import RecommendList from "../components/home/RecommendList";
 import SunshineCardSlider from "../components/home/SunshineCardSlider";
+import BackgroundBlobs from "../components/shared/BackgroundBlobs";
 import {
   HOME_RECOMMENDATIONS,
 } from "../data/homeRecommendations";
@@ -13,6 +14,8 @@ function Home() {
           '"Pretendard Variable", Pretendard, sans-serif',
       }}
     >
+      <BackgroundBlobs />
+
       <header className="mb-5">
         <h1 className="text-[24px] font-bold text-[#F78903]">
           Solaness
