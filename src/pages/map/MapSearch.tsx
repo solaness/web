@@ -10,6 +10,9 @@ import { areaBasedList, searchKeyword } from "../../api/tourApi";
 import type { Place, PlaceCategoryCode } from "../../types/place";
 
 const NEARBY_LIMIT = 4;
+// 카페처럼 cat3(소분류)로 클라이언트에서 한 번 더 걸러내는 카테고리는 표본이 작으면
+// 인기순 상위권에 아예 안 걸려 결과가 자주 비므로, numOfRows를 넉넉히 잡는다.
+const CATEGORY_LIST_FETCH_SIZE = 50;
 
 function MapSearch() {
   const [searchInput, setSearchInput] = useState("");
@@ -47,7 +50,11 @@ function MapSearch() {
     setIsBrowseLoading(true);
     setBrowseError(null);
 
-    areaBasedList({ category: selectedCategory, signal: controller.signal })
+    areaBasedList({
+      category: selectedCategory,
+      numOfRows: CATEGORY_LIST_FETCH_SIZE,
+      signal: controller.signal,
+    })
       .then((result) => setCategoryPlaces(result.places))
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") {
