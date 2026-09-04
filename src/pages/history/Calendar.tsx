@@ -13,7 +13,6 @@ import {
 } from "../../contexts/AuthContext";
 import {
   SAMPLE_ACTIVITIES,
-  SAMPLE_TRAVEL_SCHEDULES,
 } from "../../data/historyCalendar";
 
 const INITIAL_YEAR = 2026;
@@ -70,18 +69,6 @@ function Calendar() {
   );
 
   /*
-   * 로그인 사용자에게만 연속 일정을 표시합니다.
-   */
-  const availableTravelSchedules =
-    useMemo(() => {
-      if (isGuest || !user) {
-        return [];
-      }
-
-      return SAMPLE_TRAVEL_SCHEDULES;
-    }, [isGuest, user]);
-
-  /*
    * 현재 화면에 표시된 연도와 월에 해당하는
    * 활동 기록만 추출합니다.
    */
@@ -98,37 +85,6 @@ function Calendar() {
       monthPrefix,
     ],
   );
-
-  /*
-   * 현재 월과 겹치는 여행 일정만 추출합니다.
-   */
-  const monthlyTravelSchedules =
-    useMemo(() => {
-      const firstDate =
-        `${monthPrefix}-01`;
-
-      const lastDay = new Date(
-        year,
-        month + 1,
-        0,
-      ).getDate();
-
-      const lastDate =
-        `${monthPrefix}-${String(
-          lastDay,
-        ).padStart(2, "0")}`;
-
-      return availableTravelSchedules.filter(
-        (schedule) =>
-          schedule.startDate <= lastDate &&
-          schedule.endDate >= firstDate,
-      );
-    }, [
-      availableTravelSchedules,
-      monthPrefix,
-      month,
-      year,
-    ]);
 
   /*
    * 캘린더에 원형으로 표시할 활동 날짜 목록입니다.
@@ -274,7 +230,7 @@ function Calendar() {
             activityDates
           }
           travelSchedules={
-            monthlyTravelSchedules
+           []
           }
           onPreviousMonth={
             handlePreviousMonth
