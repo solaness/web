@@ -1,5 +1,28 @@
+import {
+  AMBIGUOUS_INDOOR_HINT_CAT3,
+  INDOOR_EXPERIENCE_CAT3,
+} from "../constants/categoryFilters";
 import type { TourApiRawItem } from "./tourApi.types";
 import type { Place, PlaceCategoryCode } from "../types/place";
+
+const INDOOR_NAME_HINT = "실내";
+
+function isIndoorExperience(cat3: string | undefined, title: string): boolean {
+  if (cat3 == null) {
+    return false;
+  }
+
+  if ((INDOOR_EXPERIENCE_CAT3 as readonly string[]).includes(cat3)) {
+    return true;
+  }
+
+  // "수영"처럼 cat3만으로는 실내/실외가 안 갈리는 항목은 장소명 힌트로 보조 판단한다.
+  if ((AMBIGUOUS_INDOOR_HINT_CAT3 as readonly string[]).includes(cat3)) {
+    return title.includes(INDOOR_NAME_HINT);
+  }
+
+  return false;
+}
 
 /**
  * TourAPI 원본 항목(camelCase 아닌 lowercase 필드)을 앱의 Place 타입으로 변환한다.
@@ -27,5 +50,7 @@ export function mapTourItemToPlace(
     thumbnailUrl,
     lat: Number.isFinite(lat) ? lat : undefined,
     lng: Number.isFinite(lng) ? lng : undefined,
+    isIndoorExperience:
+      category === "experience" ? isIndoorExperience(item.cat3, item.title) : false,
   };
 }
