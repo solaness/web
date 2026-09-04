@@ -1,83 +1,62 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ResultTypeCard from "../../components/onboarding/ResultTypeCard";
 import ResultActionButtons from "../../components/onboarding/ResultActionButtons";
 import { useAuth } from "../../contexts/AuthContext";
-import {
-  useWbtiAnswers,
-  WBTI_ANSWERS_STORAGE_KEY,
-} from "../../hooks/useWbtiAnswers";
+import { useOnboarding } from "../../contexts/OnboardingContext";
 import { WBTI_TYPES, calculateWbtiType } from "../../data/wbtiTypes";
-import { isValidRegionSelection } from "../../data/regions";
 import { saveOnboardingResult } from "../../firebase/firestore";
 
-const REGION_STORAGE_KEY = "onboardingRegion";
 const HOME_PATH = "/home";
 const FALLBACK_PATH = "/onboarding/test/1";
-
-interface StoredRegion {
-  provinceCode: string;
-  districtCode: string;
-}
-
-function readStoredRegion(): StoredRegion | null {
-  const storedValue = sessionStorage.getItem(REGION_STORAGE_KEY);
-
-  if (!storedValue) {
-    return null;
-  }
-
-  try {
-    const parsedValue = JSON.parse(storedValue) as Partial<StoredRegion>;
-    const provinceCode = parsedValue.provinceCode ?? "";
-    const districtCode = parsedValue.districtCode ?? "";
-
-    if (!isValidRegionSelection(provinceCode, districtCode)) {
-      return null;
-    }
-
-    return { provinceCode, districtCode };
-  } catch {
-    return null;
-  }
-}
 
 function Result() {
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
-  const { answers } = useWbtiAnswers();
+  const { region, wbtiAnswers: answers, resetOnboarding } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // "시작하기"로 온보딩을 마치고 나가는 중에는 resetOnboarding()이 answers를 비우면서
+  // 이 컴포넌트가 다시 렌더링될 수 있다. 그때 아래 typeInfo 방어 로직이 재실행돼서
+  // /home 대신 FALLBACK_PATH로 되돌아가버리는 걸 막기 위한 플래그.
+  const isLeavingRef = useRef(false);
 
   const typeId = useMemo(() => calculateWbtiType(answers), [answers]);
   const typeInfo = typeId ? WBTI_TYPES[typeId] : null;
 
   if (!typeInfo) {
+    if (isLeavingRef.current) {
+      // "시작하기"로 나가는 중 resetOnboarding()이 answers를 비워서 여기로 들어온 경우 —
+      // 곧 /home으로 unmount되니 아무것도 그리지 않는다.
+      return null;
+    }
+
     // 답변이 아직 다 없는 상태(직접 URL 접근 등)로 들어온 경우 검사 첫 페이지로 되돌린다.
     return <Navigate to={FALLBACK_PATH} replace />;
   }
 
   const handleStart = async () => {
+    if (!typeInfo) {
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
       // 게스트는 개인 데이터 저장 기능을 쓸 수 없으므로(CLAUDE.md 게스트 모드 제한) Firestore 저장을 건너뛴다.
-      if (!isGuest && user) {
-        const region = readStoredRegion();
-
-        // 정상 플로우라면 항상 존재하지만, 방어적으로 지역 정보가 없으면 저장 없이 넘어간다.
-        if (region) {
-          await saveOnboardingResult(user.uid, {
-            region,
-            wbti: { answers, typeId: typeInfo.typeId },
-          });
-        }
+      // 정상 플로우라면 region이 항상 채워져 있지만, 방어적으로 비어 있으면 저장 없이 넘어간다.
+      if (!isGuest && user && region.provinceCode && region.districtCode) {
+        await saveOnboardingResult(user.uid, {
+          region,
+          wbti: { answers, typeId: typeInfo.typeId },
+        });
       }
 
-      sessionStorage.removeItem(REGION_STORAGE_KEY);
-      sessionStorage.removeItem(WBTI_ANSWERS_STORAGE_KEY);
+      isLeavingRef.current = true;
+      resetOnboarding();
       navigate(HOME_PATH);
     } catch (error) {
       console.error("온보딩 결과 저장 실패:", error);

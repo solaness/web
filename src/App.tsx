@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 
 import { AuthProvider } from './contexts/AuthContext'
+import { OnboardingProvider } from './contexts/OnboardingContext'
 import RequireAuth from './components/shared/RequireAuth'
 import MainLayout from './components/layout/MainLayout'
 
@@ -34,11 +35,22 @@ function App() {
 
           <Route path="/onboarding/intro" element={<Intro />} />
           <Route path="/onboarding/login" element={<Login />} />
-          <Route path="/onboarding/region" element={<Region />} />
-          <Route path="/onboarding/test/1" element={<Test1 />} />
-          <Route path="/onboarding/test/2" element={<Test2 />} />
-          <Route path="/onboarding/test/3" element={<Test3 />} />
-          <Route path="/onboarding/result" element={<Result />} />
+
+          {/* 지역 선택 ~ 결과 화면만 지역/WBTI 진행 상태를 공유해야 해서 OnboardingProvider로 감싼다.
+              intro/login은 이 상태를 안 쓰므로 범위 밖에 둔다. */}
+          <Route
+            element={
+              <OnboardingProvider>
+                <Outlet />
+              </OnboardingProvider>
+            }
+          >
+            <Route path="/onboarding/region" element={<Region />} />
+            <Route path="/onboarding/test/1" element={<Test1 />} />
+            <Route path="/onboarding/test/2" element={<Test2 />} />
+            <Route path="/onboarding/test/3" element={<Test3 />} />
+            <Route path="/onboarding/result" element={<Result />} />
+          </Route>
 
           <Route
             path="/chatbot"
