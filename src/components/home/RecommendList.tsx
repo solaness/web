@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import PlaceThumbCard from "../shared/PlaceThumbCard";
+import HomePlaceThumbCard from "../shared/HomePlaceThumbCard";
 import type {
   RecommendedPlace,
 } from "../../data/homeRecommendations";
@@ -31,7 +31,7 @@ function RecommendList({
 
       <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {places.map((place) => (
-          <PlaceThumbCard
+          <HomePlaceThumbCard
             key={place.id}
             place={place}
             onClick={handlePlaceClick}
