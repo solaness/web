@@ -1,5 +1,5 @@
 import { Navigate, useNavigate } from "react-router-dom";
-import solnyangHello from "../../assets/images/solnyang-hello.png";
+import solnyangHello from "../../assets/images/solnyang-hello.svg";
 import RecordMiniCalendar from "../../components/history/RecordMiniCalendar";
 import RecordMonthlyPlaces from "../../components/history/RecordMonthlyPlaces";
 import RecordMonthlySummary from "../../components/history/RecordMonthlySummary";
