@@ -16,6 +16,33 @@ const MOBILE_APP = "Solaness";
 const DEFAULT_NUM_OF_ROWS = 20;
 const RESULT_CODE_SUCCESS = "0000";
 
+// 관광공사 TourAPI가 간헐적으로 응답이 느려지거나(수십 초 이상) 5xx를 반환하는 경우가 있어서,
+// 무한정 기다리지 않게 타임아웃을 걸고 일시적 장애로 보이는 실패는 자동으로 몇 번 재시도한다.
+const REQUEST_TIMEOUT_MS = 15_000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1_000;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 재시도할 가치가 있는 실패인지 판단한다 — 서버가 살아있고 요청이 잘못된 경우(4xx, 파라미터 에러 등)는
+ * 다시 시도해도 똑같이 실패하므로 제외하고, 네트워크 단절/타임아웃/5xx처럼 "지금 이 순간만" 문제인
+ * 경우만 재시도 대상으로 삼는다.
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof TourApiError) {
+    return /^5\d{2}$/.test(error.code);
+  }
+  // fetch 자체가 실패(네트워크 단절 등)하면 TypeError, 우리가 건 타임아웃이 발동하면
+  // DOMException("TimeoutError")로 온다(사용자의 signal이 취소한 DOMException("AbortError")와는 다르다).
+  return (
+    error instanceof TypeError ||
+    (error instanceof DOMException && error.name === "TimeoutError")
+  );
+}
+
 export class TourApiError extends Error {
   code: string;
 
@@ -120,14 +147,19 @@ export function resolvePlaceCategories(item: TourApiRawItem): PlaceCategoryCode[
 
 /**
  * envelope 파싱 + 에러 처리 공통 로직. 목록/상세 조회가 모두 같은 envelope 모양을 쓴다.
+ * 호출자의 signal(컴포넌트 unmount 등)과 이 요청 전용 타임아웃을 합쳐서 건다 —
+ * 둘 중 뭐가 됐든 먼저 발동하는 쪽 이유(reason)가 그대로 fetch의 에러가 된다.
  */
-async function fetchTourApi<T>(
+async function fetchTourApiOnce<T>(
   endpoint: string,
   params: URLSearchParams,
   signal?: AbortSignal,
 ): Promise<TourApiEnvelope<T>["response"]> {
+  const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+
   const response = await fetch(`${BASE_PATH}/${endpoint}?${params.toString()}`, {
-    signal,
+    signal: combinedSignal,
   });
 
   // serviceKey가 비어있거나 잘못됐을 때는 HTTP 자체가 401 등으로 오면서
@@ -169,6 +201,31 @@ async function fetchTourApi<T>(
   }
 
   return envelope.response;
+}
+
+/**
+ * fetchTourApiOnce를 감싸서 일시적 실패(네트워크 단절/타임아웃/5xx)만 몇 번 더 시도한다.
+ * 호출자가 signal로 직접 취소한 경우(라우트 이동 등)는 재시도하지 않고 바로 던진다.
+ */
+async function fetchTourApi<T>(
+  endpoint: string,
+  params: URLSearchParams,
+  signal?: AbortSignal,
+): Promise<TourApiEnvelope<T>["response"]> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetchTourApiOnce<T>(endpoint, params, signal);
+    } catch (error) {
+      const callerCancelled =
+        signal?.aborted && error instanceof DOMException && error.name === "AbortError";
+
+      if (callerCancelled || attempt >= MAX_RETRIES || !isRetryableError(error)) {
+        throw error;
+      }
+
+      await delay(RETRY_DELAY_MS * (attempt + 1));
+    }
+  }
 }
 
 async function requestTourList(
