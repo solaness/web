@@ -119,20 +119,20 @@ function MonthlyCalendar({
       <div className="flex items-center justify-between">
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center text-xl text-[#6B6B6B]"
+          className="flex h-8 w-8 items-center justify-center text-[24px] text-[#6B6B6B]"
           onClick={onPreviousMonth}
           aria-label="이전 달"
         >
           ‹
         </button>
 
-        <h2 className="text-[16px] font-bold text-[#1A1A2E]">
+        <h2 className="text-[18px] font-bold text-[#754308]">
           {year}년 {month + 1}월
         </h2>
 
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center text-xl text-[#6B6B6B]"
+          className="flex h-8 w-8 items-center justify-center text-[24px] text-[#6B6B6B]"
           onClick={onNextMonth}
           aria-label="다음 달"
         >
@@ -145,7 +145,7 @@ function MonthlyCalendar({
         {WEEKDAYS.map((weekday) => (
           <div
             key={weekday}
-            className="flex h-8 items-center justify-center text-[12px] font-medium text-[#6B6B6B]"
+            className="flex h-8 items-center justify-center text-[15px] font-medium text-[#754308]"
           >
             {weekday}
           </div>
@@ -251,11 +251,11 @@ function MonthlyCalendar({
             todayKey === dateKey;
 
           let dateClassName =
-            "text-[#6B6B6B] hover:bg-[#FFF0D8]";
+            "text-[14px] text-[#754308] hover:bg-[#FFF0D8]";
 
           if (isToday) {
             dateClassName =
-              "bg-[#FFF0D8] font-semibold text-[#F78903]";
+              "text-[14px] bg-[#FFF0D8] font-semibold text-[#F78903]";
           }
 
           /*
@@ -267,7 +267,7 @@ function MonthlyCalendar({
             !schedule
           ) {
             dateClassName =
-              "border-2 border-[#FFAC27] bg-white font-medium text-[#F78903]";
+              "border-2 border-[#FFAC27] bg-white font-medium text-[14px] text-[#F78903]";
           }
 
           /*
@@ -296,7 +296,7 @@ function MonthlyCalendar({
            */
           if (isSelected) {
             dateClassName =
-              "border-2 border-[#FFAC27] bg-[#FFE2B2] font-semibold text-[#F78903]";
+              "border-2 border-[#FFAC27] bg-[#FFE2B2] font-semibold text-[14px] text-[#F78903]";
           }
 
           /*
