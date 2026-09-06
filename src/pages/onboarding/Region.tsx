@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RegionDropdown from "../../components/onboarding/RegionDropdown";
+import ConfirmModal from "../../components/shared/ConfirmModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { useOnboarding } from "../../contexts/OnboardingContext";
 import { REGIONS } from "../../data/regions";
@@ -229,50 +230,14 @@ function Region() {
       </footer>
 
       {isExitModalOpen && (
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 px-6"
-          role="presentation"
-        >
-          <section
-            className="w-full max-w-[310px] rounded-[20px] bg-white px-5 pb-4 pt-5 shadow-xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="exit-modal-title"
-            aria-describedby="exit-modal-description"
-          >
-            <h2
-              id="exit-modal-title"
-              className="text-center text-xl font-bold text-black"
-            >
-              정말 나가실건가요? 😢
-            </h2>
-
-            <p
-              id="exit-modal-description"
-              className="mt-1 text-center text-sm text-[#B3B3B3]"
-            >
-              결과는 저장되지 않아요
-            </p>
-
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                className="h-[46px] rounded-[23px] bg-[#FFAC27] text-sm font-bold text-white shadow-[2px_3px_4px_rgba(138,62,15,0.2)]"
-                onClick={handleContinue}
-              >
-                계속하기
-              </button>
-
-              <button
-                type="button"
-                className="h-[46px] rounded-[23px] border border-[#FFAC27] bg-white text-sm font-bold text-[#FFAC27] shadow-[2px_3px_4px_rgba(138,62,15,0.12)]"
-                onClick={handleExit}
-              >
-                나가기
-              </button>
-            </div>
-          </section>
-        </div>
+        <ConfirmModal
+          title="정말 나가실건가요? 😢"
+          description="결과는 저장되지 않아요"
+          primaryLabel="계속하기"
+          onPrimary={handleContinue}
+          secondaryLabel="나가기"
+          onSecondary={handleExit}
+        />
       )}
     </main>
   );

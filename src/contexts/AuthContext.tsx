@@ -13,6 +13,7 @@ import {
   signInWithGoogle,
   ensureUserDocument,
   signOutUser,
+  deleteAccount as deleteFirebaseAccount,
 } from "../firebase/auth";
 
 const GUEST_STORAGE_KEY = "isGuest";
@@ -24,6 +25,7 @@ interface AuthContextValue {
   loginWithGoogle: () => Promise<{ onboardingCompleted: boolean }>;
   startGuestMode: () => void;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -74,9 +76,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
+    await deleteFirebaseAccount(user);
+    setUser(null);
+  }, [user]);
+
   const value = useMemo(
-    () => ({ user, isGuest, loading, loginWithGoogle, startGuestMode, logout }),
-    [user, isGuest, loading, loginWithGoogle, startGuestMode, logout],
+    () => ({
+      user,
+      isGuest,
+      loading,
+      loginWithGoogle,
+      startGuestMode,
+      logout,
+      deleteAccount,
+    }),
+    [user, isGuest, loading, loginWithGoogle, startGuestMode, logout, deleteAccount],
   );
 
   return (

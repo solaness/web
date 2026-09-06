@@ -20,7 +20,7 @@ function ProfileHeader({ user, isGuest }: ProfileHeaderProps) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="h-[160px] w-[160px] overflow-hidden rounded-full bg-white shadow-[0px_0px_10px_4px_#FAC77540]">
+      <div className="h-[160px] w-[160px] overflow-hidden rounded-full bg-white shadow-[4px_4px_15px_0px_#FFAC27B2]">
         <img
           src={avatarUrl}
           alt={`${displayName} 프로필 사진`}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
+import ConfirmModal from "../../components/shared/ConfirmModal";
 import ProfileHeader from "../../components/my/ProfileHeader";
 import WbtiSummaryCard from "../../components/my/WbtiSummaryCard";
 import MyMenuRow from "../../components/my/MyMenuRow";
@@ -20,10 +21,12 @@ const EDIT_PROFILE_PATH = "/my/edit";
 const FAVORITES_PATH = "/my/favorites";
 
 function MyMain() {
-  const { user, isGuest, logout } = useAuth();
+  const { user, isGuest, logout, deleteAccount } = useAuth();
   const navigate = useNavigate();
   const { guestTypeId } = useGuestWbtiType();
   const [loggedInTypeId, setLoggedInTypeId] = useState<WbtiTypeId | null>(null);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
   // 로그인 사용자는 Firestore에서, 게스트는 useGuestWbtiType(세션스토리지)에서 유형을 가져온다.
   useEffect(() => {
@@ -61,8 +64,19 @@ function MyMain() {
     }
   };
 
-  const handleWithdraw = () => {
-    // TODO: 회원 탈퇴 구현 예정 (Firebase 재인증 + 계정 삭제 + Firestore 데이터 정리, 확인 모달 포함 — 별도 이슈)
+  const handleWithdrawConfirmed = async () => {
+    setIsWithdrawModalOpen(false);
+    setIsWithdrawing(true);
+
+    try {
+      await deleteAccount();
+      navigate(LOGIN_PATH);
+    } catch (error) {
+      console.error("회원 탈퇴 실패:", error);
+      window.alert("탈퇴에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   return (
@@ -114,11 +128,12 @@ function MyMain() {
               </button>
               <button
                 type="button"
-                onClick={handleWithdraw}
-                className="flex flex-1 items-center justify-center gap-1 text-xs text-[#333333]"
+                onClick={() => setIsWithdrawModalOpen(true)}
+                disabled={isWithdrawing}
+                className="flex flex-1 items-center justify-center gap-1 text-xs text-[#333333] disabled:opacity-50"
               >
                 <IconWithdraw className="h-4 w-4 shrink-0" />
-                탈퇴하기
+                {isWithdrawing ? "탈퇴 중..." : "탈퇴하기"}
               </button>
             </div>
           )}
@@ -142,6 +157,17 @@ function MyMain() {
           이용약관 | 개인정보 처리방침
         </p>
       </section>
+
+      {isWithdrawModalOpen && (
+        <ConfirmModal
+          title="정말 탈퇴하시겠어요? 😢"
+          description="계정과 저장된 데이터가 모두 삭제되며 되돌릴 수 없어요"
+          primaryLabel="취소"
+          onPrimary={() => setIsWithdrawModalOpen(false)}
+          secondaryLabel="탈퇴하기"
+          onSecondary={handleWithdrawConfirmed}
+        />
+      )}
     </main>
   );
 }
