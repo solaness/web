@@ -30,6 +30,9 @@ function Region({ mode = "onboarding" }: RegionProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const allowNavigationRef = useRef(false);
+  // edit 모드에서 Firestore 프리필이 늦게 도착했을 때, 그 사이 사용자가 이미 직접 고른
+  // 선택값을 덮어쓰지 않기 위한 플래그.
+  const hasUserEditedRegionRef = useRef(false);
 
   const [selectedRegionCode, setSelectedRegionCode] = useState(
     region.provinceCode,
@@ -55,7 +58,12 @@ function Region({ mode = "onboarding" }: RegionProps) {
 
     getUserProfile(user.uid)
       .then((profile) => {
-        if (cancelled || !profile?.regionProvinceCode || !profile?.regionDistrictCode) {
+        if (
+          cancelled ||
+          hasUserEditedRegionRef.current ||
+          !profile?.regionProvinceCode ||
+          !profile?.regionDistrictCode
+        ) {
           return;
         }
 
@@ -72,12 +80,19 @@ function Region({ mode = "onboarding" }: RegionProps) {
   }, [isEditMode, user]);
 
   const handleRegionChange = (regionCode: string) => {
+    hasUserEditedRegionRef.current = true;
+
     if (regionCode === selectedRegionCode) {
       return;
     }
 
     setSelectedRegionCode(regionCode);
     setSelectedDistrictCode("");
+  };
+
+  const handleDistrictChange = (districtCode: string) => {
+    hasUserEditedRegionRef.current = true;
+    setSelectedDistrictCode(districtCode);
   };
 
   const handlePrevious = () => {
@@ -296,7 +311,7 @@ function Region({ mode = "onboarding" }: RegionProps) {
           selectedRegionCode={selectedRegionCode}
           selectedDistrictCode={selectedDistrictCode}
           onRegionChange={handleRegionChange}
-          onDistrictChange={setSelectedDistrictCode}
+          onDistrictChange={handleDistrictChange}
         />
       </section>
 
