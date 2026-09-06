@@ -279,6 +279,11 @@ export async function getPlaceDetail({
   }
 
   const item = Array.isArray(body.items.item) ? body.items.item[0] : body.items.item;
+
+  if (!item) {
+    throw new TourApiError("NOT_FOUND", "장소를 찾을 수 없어요.");
+  }
+
   const categories = resolvePlaceCategories(item);
   const place = mapTourItemToPlace(item, categories[0] ?? "all");
 

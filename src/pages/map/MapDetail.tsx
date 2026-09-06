@@ -79,6 +79,11 @@ function MapDetail() {
 
     const controller = new AbortController();
     setStatus("loading");
+    setIsScrolled(false);
+    setIsBookmarked(false);
+    setOverviewExpanded(false);
+    setLinkCopied(false);
+    gestureOffsetRef.current = 0;
 
     getPlaceDetail({ id, signal: controller.signal })
       .then((detail) => {
@@ -205,7 +210,7 @@ function MapDetail() {
         type="button"
         onClick={() => navigate(-1)}
         aria-label="이전 화면으로 이동"
-        className="absolute left-2 top-[54px] flex h-11 w-12 items-center justify-center text-white"
+        className="absolute left-2 top-[54px] flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/40 text-white"
       >
         <IconChevronLeft className="text-white" />
       </button>
@@ -215,7 +220,7 @@ function MapDetail() {
         onClick={() => setIsBookmarked((prev) => !prev)}
         aria-label={isBookmarked ? "북마크 해제" : "북마크"}
         aria-pressed={isBookmarked}
-        className="absolute right-4 top-[54px] flex h-9 w-9 items-center justify-center text-white"
+        className="absolute right-4 top-[54px] flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/40 text-white"
       >
         <IconBookmark
           className="h-[22px] w-[18px]"
