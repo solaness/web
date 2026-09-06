@@ -1,39 +1,11 @@
 import RecordCategoryStats from "./RecordCategoryStats";
-import solnyangBasic from "../../assets/images/solnyang-basic.png";
-import solnyangHello from "../../assets/images/solnyang-hello.png"
+import solnyangBasic from "../../assets/images/solnyang-basic.svg";
+import solnyangHello from "../../assets/images/solnyang-hello.svg"
+import type { DailyActivity } from "../../data/historyCalendar";
 
-const CATEGORY_STATS = [
-  {
-    id: "forest",
-    name: "산림",
-    icon: "🌿",
-    count: 7,
-  },
-  {
-    id: "cafe",
-    name: "카페",
-    icon: "☕",
-    count: 2,
-  },
-  {
-    id: "experience",
-    name: "체험",
-    icon: "🎨",
-    count: 1,
-  },
-  {
-    id: "shopping",
-    name: "쇼핑",
-    icon: "🛍️",
-    count: 3,
-  },
-  {
-    id: "sea",
-    name: "바다",
-    icon: "🌊",
-    count: 1,
-  },
-];
+interface RecordMonthlySummaryProps {
+  activities: DailyActivity[];
+}
 
 interface SummaryBoxProps {
   label: string;
@@ -41,6 +13,14 @@ interface SummaryBoxProps {
   unit: string;
   mascotSrc: string;
 }
+
+const CATEGORY_CONFIG = [
+  { id: "forest", name: "산림", icon: "🌿", values: ["산림", "수목원", "공원"] },
+  { id: "cafe", name: "카페", icon: "☕", values: ["카페"] },
+  { id: "experience", name: "체험", icon: "🎨", values: ["체험"] },
+  { id: "shopping", name: "쇼핑", icon: "🛍️", values: ["쇼핑"] },
+  { id: "sea", name: "바다", icon: "🌊", values: ["바다", "해변"] },
+];
 
 function SummaryBox({
   label,
@@ -78,7 +58,34 @@ function SummaryBox({
   );
 }
 
-function RecordMonthlySummary() {
+function RecordMonthlySummary({
+   activities,
+}: RecordMonthlySummaryProps) {
+  const totalActivities = activities.length;
+
+  const visitedPlaceCount = new Set(
+    activities.map((activity) => activity.placeId),
+  ).size;
+
+  const categoryCounts = activities.reduce<Record<string, number>>(
+    (counts, activity) => {
+      counts[activity.category] =
+        (counts[activity.category] ?? 0) + 1;
+
+      return counts;
+    },
+    {},
+  );
+
+  const categoryStats = CATEGORY_CONFIG.map((category) => ({
+    id: category.id,
+    name: category.name,
+    icon: category.icon,
+    count: activities.filter((activity) =>
+      category.values.includes(activity.category),
+    ).length,
+  }));
+
   return (
     <section
       className="h-[277px] w-[334px] rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[13px] py-[12px]"
@@ -97,21 +104,21 @@ function RecordMonthlySummary() {
       <div className="mt-[14px] flex gap-[8px]">
         <SummaryBox
           label="총 활동 횟수"
-          value={14}
+          value={totalActivities}
           unit="회"
           mascotSrc={solnyangBasic}
         />
 
         <SummaryBox
           label="방문 장소 수"
-          value={8}
+          value={visitedPlaceCount}
           unit="곳"
           mascotSrc={solnyangHello}
         />
       </div>
 
       <div className="mt-[18px]">
-        <RecordCategoryStats categories={CATEGORY_STATS} />
+        <RecordCategoryStats categories={categoryStats} />
       </div>
     </section>
   );

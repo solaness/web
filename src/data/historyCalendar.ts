@@ -70,6 +70,17 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
     sunshineScore: 70,
     sunshineMinutes: 47,
   },
+  {
+    id: "activity-6",
+    date: "2026-09-15",
+    placeId: "place-6",
+    placeName: "한라수목원",
+    address: "제주특별자치도 제주시",
+    category: "수목원",
+    sunshineScore: 70,
+    sunshineMinutes: 47,
+  },
+  
 ];
 
 export const SAMPLE_TRAVEL_SCHEDULES: TravelSchedule[] = [

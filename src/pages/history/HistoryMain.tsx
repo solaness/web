@@ -7,8 +7,9 @@ import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import { useAuth } from "../../contexts/AuthContext";
 import { SAMPLE_ACTIVITIES } from "../../data/historyCalendar";
 
-const DISPLAY_YEAR = 2026;
-const DISPLAY_MONTH = 6;
+const now = new Date();
+const DISPLAY_YEAR = now.getFullYear();
+const DISPLAY_MONTH = now.getMonth();
 
 function HistoryMain() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ function HistoryMain() {
           onOpenCalendar={handleOpenCalendar}
         />
 
-        <RecordMonthlySummary />
+        <RecordMonthlySummary activities={monthlyActivities} />
 
         <RecordMonthlyPlaces
           activities={monthlyActivities}
