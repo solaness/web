@@ -88,7 +88,9 @@ function EditProfile() {
 
   return (
     <main
-      className="relative mx-auto w-full max-w-[393px] overflow-x-hidden bg-[#FFFDF6]"
+      className={`relative mx-auto w-full max-w-[393px] overflow-x-hidden bg-[#FFFDF6] ${
+        isGuest ? "h-[100dvh] min-h-[600px]" : ""
+      }`}
       style={{
         fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}
