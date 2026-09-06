@@ -87,14 +87,16 @@ function App() {
             <Route path="/my/favorites" element={<Favorites />} />
           </Route>
 
-          {/* 지역 수정 / WBTI 재검사: 온보딩 Region·Test·Result와 화면(그리고 진행 상태
-              컨텍스트)을 공유하는 마이페이지 하위 플로우. 로그인만 허용(RequireAuth)하되
-              게스트도 통과는 되므로 각 화면 안에서 isGuest면 GuestNotice로 막는다.
-              BottomNav 없는 전체화면 톤이라 MainLayout 밖에 둔다. */}
+          {/* 지역 수정 / WBTI 재검사: 온보딩 Region·Test·Result와 화면 컴포넌트는 공유하지만,
+              진행 상태(세션스토리지)는 storageNamespace로 분리한다 — 안 그러면 온보딩을 하다 만
+              사용자의 답변이 재검사 화면에 그대로 프리필되거나, 반대로 재검사 완료 시
+              resetOnboarding()이 진행 중이던 실제 온보딩 답변까지 지워버릴 수 있다.
+              로그인만 허용(RequireAuth)하되 게스트도 통과는 되므로 각 화면 안에서 isGuest면
+              GuestNotice로 막는다. BottomNav 없는 전체화면 톤이라 MainLayout 밖에 둔다. */}
           <Route
             element={
               <RequireAuth>
-                <OnboardingProvider>
+                <OnboardingProvider storageNamespace="myEdit">
                   <Outlet />
                 </OnboardingProvider>
               </RequireAuth>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import GuestNotice from "../../components/shared/GuestNotice";
@@ -26,6 +26,9 @@ function EditProfile() {
   const [initialNickname, setInitialNickname] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // 프리필 fetch가 늦게 도착했을 때, 그 사이 사용자가 이미 입력을 시작했다면 타이핑을
+  // 덮어쓰지 않기 위한 플래그.
+  const hasEditedNicknameRef = useRef(false);
 
   // 닉네임 프리필: 저장된 닉네임이 있으면 그걸, 없으면 Google 계정 이름을 초깃값으로 보여준다.
   useEffect(() => {
@@ -42,8 +45,13 @@ function EditProfile() {
         }
 
         const resolved = profile?.nickname || user.displayName || "";
-        setNicknameInput(resolved);
+        // "바뀐 게 없으면 저장 생략" 판단 기준(initialNickname)은 사용자의 타이핑 여부와
+        // 무관하게 서버 값으로 항상 맞춰두고, 실제 입력창 값만 아직 안 건드렸을 때만 채운다.
         setInitialNickname(resolved);
+
+        if (!hasEditedNicknameRef.current) {
+          setNicknameInput(resolved);
+        }
       })
       .catch((error) => {
         console.error("프로필 정보를 불러오지 못했어요:", error);
@@ -115,7 +123,10 @@ function EditProfile() {
               <IconProfile className="h-5 w-5 shrink-0 text-[#FFAC27]" />
               <input
                 value={nicknameInput}
-                onChange={(event) => setNicknameInput(event.target.value)}
+                onChange={(event) => {
+                  hasEditedNicknameRef.current = true;
+                  setNicknameInput(event.target.value);
+                }}
                 maxLength={NICKNAME_MAX_LENGTH}
                 placeholder="닉네임을 입력해 주세요"
                 className="flex-1 bg-transparent text-sm font-medium text-[#4F4F4F] outline-none placeholder:text-[#D9D9D9]"
