@@ -1,5 +1,6 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./config";
+import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiAnswerMap, WbtiTypeId } from "../types/wbti";
 
 export interface OnboardingRegionInput {
@@ -48,8 +49,8 @@ export async function getUserWbtiTypeId(uid: string): Promise<WbtiTypeId | null>
     return null;
   }
 
-  const { wbtiTypeId } = snapshot.data() as { wbtiTypeId?: WbtiTypeId };
-  return wbtiTypeId ?? null;
+  const { wbtiTypeId } = snapshot.data() as { wbtiTypeId?: string };
+  return wbtiTypeId && isWbtiTypeId(wbtiTypeId) ? wbtiTypeId : null;
 }
 
 /**

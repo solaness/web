@@ -14,6 +14,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useGuestWbtiType } from "../../hooks/useGuestWbtiType";
 import { WBTI_TYPES } from "../../data/wbtiTypes";
 import { getUserWbtiTypeId } from "../../firebase/firestore";
+import { AccountPartiallyDeletedError } from "../../firebase/auth";
 import type { WbtiTypeId } from "../../types/wbti";
 
 const LOGIN_PATH = "/onboarding/login";
@@ -61,6 +62,7 @@ function MyMain() {
       await logout();
     } catch (error) {
       console.error("로그아웃 실패:", error);
+      window.alert("로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요.");
     }
   };
 
@@ -73,7 +75,15 @@ function MyMain() {
       navigate(LOGIN_PATH);
     } catch (error) {
       console.error("회원 탈퇴 실패:", error);
-      window.alert("탈퇴에 실패했어요. 잠시 후 다시 시도해 주세요.");
+
+      if (error instanceof AccountPartiallyDeletedError) {
+        // 이 시점엔 Firestore 문서가 이미 지워진 뒤라, 일반 실패와 다르게 안내한다.
+        window.alert(
+          "회원 정보는 삭제됐지만 계정 삭제가 끝까지 완료되지 않았어요. 다시 로그인한 뒤 '탈퇴하기'를 한 번 더 눌러주세요.",
+        );
+      } else {
+        window.alert("탈퇴에 실패했어요. 잠시 후 다시 시도해 주세요.");
+      }
     } finally {
       setIsWithdrawing(false);
     }

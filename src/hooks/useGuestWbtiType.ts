@@ -1,15 +1,11 @@
 import { useCallback, useState } from "react";
-import { WBTI_TYPES } from "../data/wbtiTypes";
+import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiTypeId } from "../types/wbti";
 
-const STORAGE_KEY = "solaness_guest_wbti_type_id";
-
-function isWbtiTypeId(value: string): value is WbtiTypeId {
-  return value in WBTI_TYPES;
-}
+export const GUEST_WBTI_TYPE_STORAGE_KEY = "solaness_guest_wbti_type_id";
 
 function readStoredTypeId(): WbtiTypeId | null {
-  const raw = sessionStorage.getItem(STORAGE_KEY);
+  const raw = sessionStorage.getItem(GUEST_WBTI_TYPE_STORAGE_KEY);
   return raw && isWbtiTypeId(raw) ? raw : null;
 }
 
@@ -27,7 +23,7 @@ export function useGuestWbtiType() {
 
   const setGuestTypeId = useCallback((typeId: WbtiTypeId) => {
     setGuestTypeIdState(typeId);
-    sessionStorage.setItem(STORAGE_KEY, typeId);
+    sessionStorage.setItem(GUEST_WBTI_TYPE_STORAGE_KEY, typeId);
   }, []);
 
   return { guestTypeId, setGuestTypeId };
