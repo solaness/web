@@ -7,6 +7,7 @@ export interface DailyActivity {
   category: string;
   sunshineScore: number;
   sunshineMinutes: number;
+  imageUrl?: string;
 }
 
 export interface TravelSchedule {
@@ -18,14 +19,16 @@ export interface TravelSchedule {
 
 export const SAMPLE_ACTIVITIES: DailyActivity[] = [
   {
-    id: "activity-1",
-    date: "2026-07-01",
-    placeId: "place-1",
-    placeName: "서울숲",
-    address: "서울특별시 성동구",
-    category: "공원",
-    sunshineScore: 67,
-    sunshineMinutes: 34,
+  id: "activity-1",
+  date: "2026-07-01",
+  placeId: "place-1",
+  placeName: "서울숲",
+  address: "서울특별시 성동구",
+  category: "공원",
+  sunshineScore: 67,
+  sunshineMinutes: 34,
+  imageUrl:
+    "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=600&q=80",
   },
   {
     id: "activity-2",
@@ -67,6 +70,17 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
     sunshineScore: 70,
     sunshineMinutes: 47,
   },
+  {
+    id: "activity-6",
+    date: "2026-09-15",
+    placeId: "place-6",
+    placeName: "한라수목원",
+    address: "제주특별자치도 제주시",
+    category: "수목원",
+    sunshineScore: 70,
+    sunshineMinutes: 47,
+  },
+  
 ];
 
 export const SAMPLE_TRAVEL_SCHEDULES: TravelSchedule[] = [
