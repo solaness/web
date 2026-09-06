@@ -5,6 +5,7 @@ import ResultTypeCard from "../../components/onboarding/ResultTypeCard";
 import ResultActionButtons from "../../components/onboarding/ResultActionButtons";
 import { useAuth } from "../../contexts/AuthContext";
 import { useOnboarding } from "../../contexts/OnboardingContext";
+import { useGuestWbtiType } from "../../hooks/useGuestWbtiType";
 import { WBTI_TYPES, calculateWbtiType } from "../../data/wbtiTypes";
 import { saveOnboardingResult } from "../../firebase/firestore";
 
@@ -15,6 +16,7 @@ function Result() {
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
   const { region, wbtiAnswers: answers, resetOnboarding } = useOnboarding();
+  const { setGuestTypeId } = useGuestWbtiType();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -53,6 +55,9 @@ function Result() {
           region,
           wbti: { answers, typeId: typeInfo.typeId },
         });
+      } else if (isGuest) {
+        // Firestore엔 못 남기지만, 마이페이지에서 유형을 보여줄 수 있게 세션 동안은 남겨둔다.
+        setGuestTypeId(typeInfo.typeId);
       }
 
       isLeavingRef.current = true;

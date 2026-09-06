@@ -1,4 +1,4 @@
-import googleLogo from "../../assets/images/google-logo.png";
+import googleLogo from "../../assets/images/google-logo-color.svg";
 
 const buttonStyle =
   "flex h-[53px] w-full max-w-[322px] items-center justify-center gap-2 rounded-[25px] text-[14px] font-bold leading-[22px]";

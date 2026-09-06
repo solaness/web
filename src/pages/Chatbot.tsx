@@ -5,7 +5,7 @@ import { areaBasedList } from "../api/tourApi";
 import IconChevronLeft from "../assets/icons/icon-chevron-left.svg?react";
 import IconPin from "../assets/icons/icon-pin.svg?react";
 import solnyangHelloSun from "../assets/images/solnyang-hello-sun.png";
-import solnyangProfile from "../assets/images/solnyang-profile.png";
+import solnyangProfile from "../assets/images/solnyang-profile.svg";
 import BackgroundBlobs from "../components/shared/BackgroundBlobs";
 import { CHATBOT_MOODS } from "../data/chatbotMoods";
 import type { Place, PlaceCategoryCode } from "../types/place";
@@ -483,11 +483,9 @@ function Chatbot() {
           <IconChevronLeft className="text-white" />
         </button>
 
-        <img
-          src={solnyangProfile}
-          alt="쏠냥이"
-          className="absolute left-[58px] top-[54px] h-[62px] w-[62px]"
-        />
+        <div className="absolute left-[58px] top-[54px] h-[62px] w-[62px] overflow-hidden rounded-full bg-white">
+          <img src={solnyangProfile} alt="쏠냥이" className="h-full w-full" />
+        </div>
 
         <span className="absolute left-[136px] top-[74px] text-[20px] font-bold leading-[22px] text-white">
           쏠냥이

@@ -25,6 +25,7 @@ import Visits from './pages/history/Visits'
 
 import MyMain from './pages/my/MyMain'
 import EditProfile from './pages/my/EditProfile'
+import Favorites from './pages/my/Favorites'
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
 
             <Route path="/my" element={<MyMain />} />
             <Route path="/my/edit" element={<EditProfile />} />
+            <Route path="/my/favorites" element={<Favorites />} />
           </Route>
         </Routes>
       </BrowserRouter>
