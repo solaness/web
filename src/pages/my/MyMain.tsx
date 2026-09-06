@@ -4,6 +4,7 @@ import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ConfirmModal from "../../components/shared/ConfirmModal";
 import ProfileHeader from "../../components/my/ProfileHeader";
 import WbtiSummaryCard from "../../components/my/WbtiSummaryCard";
+import WbtiSummaryCardSkeleton from "../../components/my/WbtiSummaryCardSkeleton";
 import MyMenuRow from "../../components/my/MyMenuRow";
 import IconBookmark from "../../assets/icons/icon-bookmark.svg?react";
 import IconProfile from "../../assets/icons/icon-profile.svg?react";
@@ -26,16 +27,21 @@ function MyMain() {
   const navigate = useNavigate();
   const { guestTypeId } = useGuestWbtiType();
   const [loggedInTypeId, setLoggedInTypeId] = useState<WbtiTypeId | null>(null);
+  const [isFetchingWbtiType, setIsFetchingWbtiType] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [accountActionError, setAccountActionError] = useState<string | null>(null);
 
   // 로그인 사용자는 Firestore에서, 게스트는 useGuestWbtiType(세션스토리지)에서 유형을 가져온다.
   useEffect(() => {
     if (isGuest || !user) {
+      // 로그아웃 등으로 user가 사라졌는데도 직전 로그인 사용자의 유형이 남아있지 않도록 비운다.
+      setLoggedInTypeId(null);
       return;
     }
 
     let cancelled = false;
+    setIsFetchingWbtiType(true);
 
     getUserWbtiTypeId(user.uid)
       .then((typeId) => {
@@ -45,6 +51,11 @@ function MyMain() {
       })
       .catch((error) => {
         console.error("유형 정보를 불러오지 못했어요:", error);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsFetchingWbtiType(false);
+        }
       });
 
     return () => {
@@ -58,17 +69,20 @@ function MyMain() {
   const handleGoLogin = () => navigate(LOGIN_PATH);
 
   const handleLogout = async () => {
+    setAccountActionError(null);
+
     try {
       await logout();
     } catch (error) {
       console.error("로그아웃 실패:", error);
-      window.alert("로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요.");
+      setAccountActionError("로그아웃에 실패했어요. 잠시 후 다시 시도해 주세요.");
     }
   };
 
   const handleWithdrawConfirmed = async () => {
     setIsWithdrawModalOpen(false);
     setIsWithdrawing(true);
+    setAccountActionError(null);
 
     try {
       await deleteAccount();
@@ -78,11 +92,11 @@ function MyMain() {
 
       if (error instanceof AccountPartiallyDeletedError) {
         // 이 시점엔 Firestore 문서가 이미 지워진 뒤라, 일반 실패와 다르게 안내한다.
-        window.alert(
+        setAccountActionError(
           "회원 정보는 삭제됐지만 계정 삭제가 끝까지 완료되지 않았어요. 다시 로그인한 뒤 '탈퇴하기'를 한 번 더 눌러주세요.",
         );
       } else {
-        window.alert("탈퇴에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        setAccountActionError("탈퇴에 실패했어요. 잠시 후 다시 시도해 주세요.");
       }
     } finally {
       setIsWithdrawing(false);
@@ -105,7 +119,11 @@ function MyMain() {
       <section className="relative z-10 flex flex-col gap-6 px-[19px] pb-8 pt-6">
         <ProfileHeader user={user} isGuest={isGuest} />
 
-        {typeInfo && <WbtiSummaryCard typeInfo={typeInfo} />}
+        {isFetchingWbtiType ? (
+          <WbtiSummaryCardSkeleton />
+        ) : (
+          typeInfo && <WbtiSummaryCard typeInfo={typeInfo} />
+        )}
 
         <div className="flex flex-col items-center gap-3 rounded-[16px] border border-[#FFAC27] bg-[#FFFDF4] px-4 py-4">
           <p className="text-sm font-semibold text-[#754308]">
@@ -146,6 +164,12 @@ function MyMain() {
                 {isWithdrawing ? "탈퇴 중..." : "탈퇴하기"}
               </button>
             </div>
+          )}
+
+          {accountActionError && (
+            <p role="alert" className="text-center text-sm font-bold text-red-500">
+              {accountActionError}
+            </p>
           )}
         </div>
 
