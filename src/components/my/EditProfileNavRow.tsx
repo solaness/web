@@ -21,7 +21,7 @@ function EditProfileNavRow({ icon: Icon, label, onClick }: EditProfileNavRowProp
     >
       <Icon className="h-5 w-5 shrink-0 text-[#FFAC27]" />
       <span className="flex-1 text-sm font-medium text-[#4F4F4F]">{label}</span>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FFAC27] text-white">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#FFEDD0] text-[#FFAC27]">
         <IconChevronRight className="h-3 w-3" />
       </span>
     </button>
