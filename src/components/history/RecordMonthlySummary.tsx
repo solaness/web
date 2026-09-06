@@ -67,16 +67,6 @@ function RecordMonthlySummary({
     activities.map((activity) => activity.placeId),
   ).size;
 
-  const categoryCounts = activities.reduce<Record<string, number>>(
-    (counts, activity) => {
-      counts[activity.category] =
-        (counts[activity.category] ?? 0) + 1;
-
-      return counts;
-    },
-    {},
-  );
-
   const categoryStats = CATEGORY_CONFIG.map((category) => ({
     id: category.id,
     name: category.name,
