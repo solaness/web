@@ -27,6 +27,7 @@ import MyMain from './pages/my/MyMain'
 import EditProfile from './pages/my/EditProfile'
 import EditAvatar from './pages/my/EditAvatar'
 import Favorites from './pages/my/Favorites'
+import EditRegion from './pages/my/edit/EditRegion'
 import EditWbtiStep from './pages/my/edit/EditWbtiStep'
 import EditWbtiResult from './pages/my/edit/EditWbtiResult'
 
@@ -97,12 +98,23 @@ function App() {
             <Route path="/my/favorites" element={<Favorites />} />
           </Route>
 
-          {/* 지역 수정 / WBTI 재검사: 온보딩 Region·Test·Result와 화면 컴포넌트는 공유하지만,
-              진행 상태(세션스토리지)는 storageNamespace로 분리한다 — 안 그러면 온보딩을 하다 만
-              사용자의 답변이 재검사 화면에 그대로 프리필되거나, 반대로 재검사 완료 시
-              resetOnboarding()이 진행 중이던 실제 온보딩 답변까지 지워버릴 수 있다.
-              로그인만 허용(RequireAuth)하되 게스트도 통과는 되므로 각 화면 안에서 isGuest면
-              GuestNotice로 막는다. BottomNav 없는 전체화면 톤이라 MainLayout 밖에 둔다. */}
+          {/* 지역 수정: 온보딩 Region.tsx와 지역 선택 UI(RegionDropdown/REGIONS)는 재사용하되
+              진행바·나가기 확인모달이 없는 단일 화면이라 별도 페이지(EditRegion)로 뺐다.
+              OnboardingContext는 안 쓰므로 게스트도 통과하는 RequireAuth만 두고, 화면 안에서
+              isGuest면 GuestNotice로 막는다. BottomNav 없는 전체화면 톤이라 MainLayout 밖에 둔다. */}
+          <Route
+            path="/my/edit/region"
+            element={
+              <RequireAuth>
+                <EditRegion />
+              </RequireAuth>
+            }
+          />
+
+          {/* WBTI 재검사: 온보딩 Test·Result와 화면 컴포넌트(TestStepPage, ResultTypeCard 등)는
+              공유하지만, 진행 상태(세션스토리지)는 storageNamespace로 분리한다 — 안 그러면
+              온보딩을 하다 만 사용자의 답변이 재검사 화면에 그대로 프리필되거나, 반대로 재검사
+              완료 시 resetOnboarding()이 진행 중이던 실제 온보딩 답변까지 지워버릴 수 있다. */}
           <Route
             element={
               <RequireAuth>
@@ -112,7 +124,6 @@ function App() {
               </RequireAuth>
             }
           >
-            <Route path="/my/edit/region" element={<Region mode="edit" />} />
             <Route path="/my/edit/wbti/:step" element={<EditWbtiStep />} />
             <Route path="/my/edit/wbti/result" element={<EditWbtiResult />} />
           </Route>

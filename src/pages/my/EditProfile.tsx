@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import GuestNotice from "../../components/shared/GuestNotice";
 import ProfileHeader from "../../components/my/ProfileHeader";
-import EditProfileNavRow from "../../components/my/EditProfileNavRow";
+import MyMenuRow from "../../components/my/MyMenuRow";
 import IconProfile from "../../assets/icons/icon-profile.svg?react";
 import IconEdit from "../../assets/icons/icon-edit.svg?react";
 import IconPhoto from "../../assets/icons/icon-photo.svg?react";
 import IconRecheck from "../../assets/icons/icon-recheck.svg?react";
 import IconLocation from "../../assets/icons/icon-location.svg?react";
 import { useAuth } from "../../contexts/AuthContext";
-import { getUserProfile, updateNickname } from "../../firebase/firestore";
+import { useUserProfile } from "../../hooks/useUserProfile";
+import { updateNickname } from "../../firebase/firestore";
 
 const MY_PATH = "/my";
 const AVATAR_PATH = "/my/edit/avatar";
@@ -21,46 +22,31 @@ const NICKNAME_MAX_LENGTH = 12;
 function EditProfile() {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
+  const { profile, isLoading: isFetchingProfile } = useUserProfile();
 
   const [nicknameInput, setNicknameInput] = useState("");
   const [initialNickname, setInitialNickname] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // 프리필 fetch가 늦게 도착했을 때, 그 사이 사용자가 이미 입력을 시작했다면 타이핑을
-  // 덮어쓰지 않기 위한 플래그.
+  // 프리필이 늦게 도착했을 때, 그 사이 사용자가 이미 입력을 시작했다면 타이핑을 덮어쓰지
+  // 않기 위한 플래그.
   const hasEditedNicknameRef = useRef(false);
 
   // 닉네임 프리필: 저장된 닉네임이 있으면 그걸, 없으면 Google 계정 이름을 초깃값으로 보여준다.
   useEffect(() => {
-    if (isGuest || !user) {
+    if (isGuest || !user || isFetchingProfile) {
       return;
     }
 
-    let cancelled = false;
+    const resolved = profile?.nickname || user.displayName || "";
+    // "바뀐 게 없으면 저장 생략" 판단 기준(initialNickname)은 사용자의 타이핑 여부와
+    // 무관하게 서버 값으로 항상 맞춰두고, 실제 입력창 값만 아직 안 건드렸을 때만 채운다.
+    setInitialNickname(resolved);
 
-    getUserProfile(user.uid)
-      .then((profile) => {
-        if (cancelled) {
-          return;
-        }
-
-        const resolved = profile?.nickname || user.displayName || "";
-        // "바뀐 게 없으면 저장 생략" 판단 기준(initialNickname)은 사용자의 타이핑 여부와
-        // 무관하게 서버 값으로 항상 맞춰두고, 실제 입력창 값만 아직 안 건드렸을 때만 채운다.
-        setInitialNickname(resolved);
-
-        if (!hasEditedNicknameRef.current) {
-          setNicknameInput(resolved);
-        }
-      })
-      .catch((error) => {
-        console.error("프로필 정보를 불러오지 못했어요:", error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, isGuest]);
+    if (!hasEditedNicknameRef.current) {
+      setNicknameInput(resolved);
+    }
+  }, [isGuest, user, isFetchingProfile, profile]);
 
   const handleSave = async () => {
     if (!user) {
@@ -135,26 +121,27 @@ function EditProfile() {
             </div>
           </div>
 
-          <div>
-            <p className="mb-2 text-sm font-semibold text-[#754308]">프로필 사진 변경</p>
-            <EditProfileNavRow
-              icon={IconPhoto}
-              label="쏠냥이 선택하기"
-              onClick={() => navigate(AVATAR_PATH)}
-            />
-          </div>
+          <MyMenuRow
+            sectionLabel="프로필 사진 변경"
+            icon={IconPhoto}
+            label="쏠냥이 선택하기"
+            onClick={() => navigate(AVATAR_PATH)}
+            arrowVariant="circle"
+          />
 
           <div className="flex flex-col gap-3">
             <p className="text-sm font-semibold text-[#754308]">기타</p>
-            <EditProfileNavRow
+            <MyMenuRow
               icon={IconRecheck}
               label="WBTI 유형 재검사"
               onClick={() => navigate(WBTI_RETAKE_PATH)}
+              arrowVariant="circle"
             />
-            <EditProfileNavRow
+            <MyMenuRow
               icon={IconLocation}
               label="지역 수정"
               onClick={() => navigate(REGION_EDIT_PATH)}
+              arrowVariant="circle"
             />
           </div>
 
