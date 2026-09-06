@@ -38,25 +38,7 @@ export async function saveOnboardingResult(
 }
 
 /**
- * 마이페이지에서 로그인 사용자의 유형 카드를 그리기 위해 users/{uid}.wbtiTypeId만 읽어온다.
- * 문서가 없거나(가입 직후 등) 아직 온보딩을 안 마쳐 필드가 없으면 null.
- */
-export async function getUserWbtiTypeId(uid: string): Promise<WbtiTypeId | null> {
-  const userRef = doc(db, "users", uid);
-  const snapshot = await getDoc(userRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  const { wbtiTypeId } = snapshot.data() as { wbtiTypeId?: string };
-  return wbtiTypeId && isWbtiTypeId(wbtiTypeId) ? wbtiTypeId : null;
-}
-
-/**
- * 마이페이지 "WBTI 재검사" 등 온보딩 이후 시점에 지역 정보는 건드리지 않고
- * WBTI 답변/유형만 갱신할 때 사용하기 위한 함수.
- * 이번 이슈에서는 호출부가 없고, 향후 마이페이지 연동 이슈에서 사용할 수 있도록 미리 준비해 둔다.
+ * 마이페이지 "WBTI 유형 재검사"에서, 지역 정보는 건드리지 않고 WBTI 답변/유형만 갱신한다.
  */
 export async function updateWbtiResult(
   uid: string,
@@ -70,6 +52,64 @@ export async function updateWbtiResult(
       wbtiAnswers: wbti.answers,
       wbtiTypeId: wbti.typeId,
       wbtiUpdatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export interface UserProfile {
+  nickname?: string;
+  regionProvinceCode?: string;
+  regionDistrictCode?: string;
+  wbtiTypeId?: WbtiTypeId;
+}
+
+/**
+ * 마이페이지/프로필 수정 화면에서 쓰는 단일 조회 (닉네임/지역/유형을 문서 한 번 읽기로 다 가져온다
+ * — 예전엔 wbtiTypeId만 따로 getUserWbtiTypeId로 또 읽었는데, 어차피 같은 문서라 합쳤다).
+ * 문서가 없으면 null.
+ */
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const userRef = doc(db, "users", uid);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const data = snapshot.data() as UserProfile & { wbtiTypeId?: string };
+
+  return {
+    nickname: data.nickname,
+    regionProvinceCode: data.regionProvinceCode,
+    regionDistrictCode: data.regionDistrictCode,
+    wbtiTypeId: data.wbtiTypeId && isWbtiTypeId(data.wbtiTypeId) ? data.wbtiTypeId : undefined,
+  };
+}
+
+/**
+ * 프로필 수정 화면의 "닉네임 변경"에서 사용. nickname 필드만 갱신한다.
+ */
+export async function updateNickname(uid: string, nickname: string): Promise<void> {
+  const userRef = doc(db, "users", uid);
+  await setDoc(userRef, { nickname }, { merge: true });
+}
+
+/**
+ * 마이페이지 "지역 수정"에서 사용. 온보딩 때와 달리 WBTI/onboardingCompleted는 건드리지 않고
+ * 지역 필드만 갱신한다.
+ */
+export async function updateRegion(
+  uid: string,
+  region: OnboardingRegionInput,
+): Promise<void> {
+  const userRef = doc(db, "users", uid);
+
+  await setDoc(
+    userRef,
+    {
+      regionProvinceCode: region.provinceCode,
+      regionDistrictCode: region.districtCode,
     },
     { merge: true },
   );

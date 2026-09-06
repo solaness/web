@@ -25,7 +25,10 @@ import Visits from './pages/history/Visits'
 
 import MyMain from './pages/my/MyMain'
 import EditProfile from './pages/my/EditProfile'
+import EditAvatar from './pages/my/EditAvatar'
 import Favorites from './pages/my/Favorites'
+import EditWbtiStep from './pages/my/edit/EditWbtiStep'
+import EditWbtiResult from './pages/my/edit/EditWbtiResult'
 
 function App() {
   return (
@@ -90,7 +93,26 @@ function App() {
 
             <Route path="/my" element={<MyMain />} />
             <Route path="/my/edit" element={<EditProfile />} />
+            <Route path="/my/edit/avatar" element={<EditAvatar />} />
             <Route path="/my/favorites" element={<Favorites />} />
+          </Route>
+
+          {/* 지역 수정 / WBTI 재검사: 온보딩 Region·Test·Result와 화면(그리고 진행 상태
+              컨텍스트)을 공유하는 마이페이지 하위 플로우. 로그인만 허용(RequireAuth)하되
+              게스트도 통과는 되므로 각 화면 안에서 isGuest면 GuestNotice로 막는다.
+              BottomNav 없는 전체화면 톤이라 MainLayout 밖에 둔다. */}
+          <Route
+            element={
+              <RequireAuth>
+                <OnboardingProvider>
+                  <Outlet />
+                </OnboardingProvider>
+              </RequireAuth>
+            }
+          >
+            <Route path="/my/edit/region" element={<Region mode="edit" />} />
+            <Route path="/my/edit/wbti/:step" element={<EditWbtiStep />} />
+            <Route path="/my/edit/wbti/result" element={<EditWbtiResult />} />
           </Route>
         </Routes>
       </BrowserRouter>

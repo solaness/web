@@ -14,7 +14,7 @@ import googleLogo from "../../assets/images/google-logo.svg";
 import { useAuth } from "../../contexts/AuthContext";
 import { useGuestWbtiType } from "../../hooks/useGuestWbtiType";
 import { WBTI_TYPES } from "../../data/wbtiTypes";
-import { getUserWbtiTypeId } from "../../firebase/firestore";
+import { getUserProfile } from "../../firebase/firestore";
 import { AccountPartiallyDeletedError } from "../../firebase/auth";
 import type { WbtiTypeId } from "../../types/wbti";
 
@@ -27,30 +27,34 @@ function MyMain() {
   const navigate = useNavigate();
   const { guestTypeId } = useGuestWbtiType();
   const [loggedInTypeId, setLoggedInTypeId] = useState<WbtiTypeId | null>(null);
+  const [nickname, setNickname] = useState<string | null>(null);
   const [isFetchingWbtiType, setIsFetchingWbtiType] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [accountActionError, setAccountActionError] = useState<string | null>(null);
 
-  // 로그인 사용자는 Firestore에서, 게스트는 useGuestWbtiType(세션스토리지)에서 유형을 가져온다.
+  // 로그인 사용자는 Firestore users/{uid} 문서 한 번 읽기로 닉네임+유형을 같이 가져오고,
+  // 게스트는 useGuestWbtiType(세션스토리지)에서 유형만 가져온다.
   useEffect(() => {
     if (isGuest || !user) {
-      // 로그아웃 등으로 user가 사라졌는데도 직전 로그인 사용자의 유형이 남아있지 않도록 비운다.
+      // 로그아웃 등으로 user가 사라졌는데도 직전 로그인 사용자의 정보가 남아있지 않도록 비운다.
       setLoggedInTypeId(null);
+      setNickname(null);
       return;
     }
 
     let cancelled = false;
     setIsFetchingWbtiType(true);
 
-    getUserWbtiTypeId(user.uid)
-      .then((typeId) => {
+    getUserProfile(user.uid)
+      .then((profile) => {
         if (!cancelled) {
-          setLoggedInTypeId(typeId);
+          setLoggedInTypeId(profile?.wbtiTypeId ?? null);
+          setNickname(profile?.nickname ?? null);
         }
       })
       .catch((error) => {
-        console.error("유형 정보를 불러오지 못했어요:", error);
+        console.error("프로필 정보를 불러오지 못했어요:", error);
       })
       .finally(() => {
         if (!cancelled) {
@@ -117,7 +121,7 @@ function MyMain() {
       </header>
 
       <section className="relative z-10 flex flex-col gap-6 px-[19px] pb-8 pt-6">
-        <ProfileHeader user={user} isGuest={isGuest} />
+        <ProfileHeader user={user} isGuest={isGuest} nickname={nickname} />
 
         {isFetchingWbtiType ? (
           <WbtiSummaryCardSkeleton />

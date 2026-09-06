@@ -34,24 +34,30 @@ function ResultActionButtons({
         {isSubmitting ? "저장 중..." : startLabel}
       </button>
 
-      <div className="flex w-full gap-3">
-        {/* TODO: 공유하기 기능 구현 예정 (우선순위 낮음) */}
-        <button
-          type="button"
-          onClick={onShare}
-          className="h-[53px] flex-1 rounded-[25px] border border-[#FFAC27] text-[16px] font-bold text-[#FFAC27] shadow-[4px_4px_4px_0px_#FAC775]"
-        >
-          공유하기
-        </button>
-        {/* TODO: 저장하기 기능 구현 예정 (우선순위 낮음) */}
-        <button
-          type="button"
-          onClick={onSave}
-          className="h-[53px] flex-1 rounded-[25px] border border-[#FFAC27] text-[16px] font-bold text-[#FFAC27] shadow-[4px_4px_4px_0px_#FAC775]"
-        >
-          저장하기
-        </button>
-      </div>
+      {(onShare || onSave) && (
+        <div className="flex w-full gap-3">
+          {/* TODO: 공유하기 기능 구현 예정 (우선순위 낮음) */}
+          {onShare && (
+            <button
+              type="button"
+              onClick={onShare}
+              className="h-[53px] flex-1 rounded-[25px] border border-[#FFAC27] text-[16px] font-bold text-[#FFAC27] shadow-[4px_4px_4px_0px_#FAC775]"
+            >
+              공유하기
+            </button>
+          )}
+          {/* TODO: 저장하기 기능 구현 예정 (우선순위 낮음) */}
+          {onSave && (
+            <button
+              type="button"
+              onClick={onSave}
+              className="h-[53px] flex-1 rounded-[25px] border border-[#FFAC27] text-[16px] font-bold text-[#FFAC27] shadow-[4px_4px_4px_0px_#FAC775]"
+            >
+              저장하기
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
