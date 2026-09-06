@@ -7,7 +7,7 @@ import EditProfileNavRow from "../../components/my/EditProfileNavRow";
 import IconProfile from "../../assets/icons/icon-profile.svg?react";
 import IconEdit from "../../assets/icons/icon-edit.svg?react";
 import IconPhoto from "../../assets/icons/icon-photo.svg?react";
-import IconRefresh from "../../assets/icons/icon-refresh.svg?react";
+import IconRecheck from "../../assets/icons/icon-recheck.svg?react";
 import IconLocation from "../../assets/icons/icon-location.svg?react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserProfile, updateNickname } from "../../firebase/firestore";
@@ -134,7 +134,7 @@ function EditProfile() {
           <div className="flex flex-col gap-3">
             <p className="text-sm font-semibold text-[#754308]">기타</p>
             <EditProfileNavRow
-              icon={IconRefresh}
+              icon={IconRecheck}
               label="WBTI 유형 재검사"
               onClick={() => navigate(WBTI_RETAKE_PATH)}
             />
