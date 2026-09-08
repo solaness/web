@@ -1,18 +1,35 @@
 import { useEffect, useState } from "react";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import PlaceThumbCard from "../../components/shared/PlaceThumbCard";
+import PlaceThumbCardSkeleton from "../../components/shared/PlaceThumbCardSkeleton";
 import CategoryFilterTabs from "../../components/shared/CategoryFilterTabs";
 import SearchBar from "../../components/map/SearchBar";
 import RecentSearchChips from "../../components/map/RecentSearchChips";
 import { useRecentSearches } from "../../hooks/useRecentSearches";
+import { useUserLocation } from "../../hooks/useUserLocation";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../../constants/categories";
-import { areaBasedList, searchKeyword } from "../../api/tourApi";
+import { areaBasedList, locationBasedList, searchKeyword } from "../../api/tourApi";
+import { getDailyPageNo, getTodaySeed, seededShuffle } from "../../utils/dailyVariety";
 import type { Place, PlaceCategoryCode } from "../../types/place";
 
 const NEARBY_LIMIT = 4;
-// 카페처럼 cat3(소분류)로 클라이언트에서 한 번 더 걸러내는 카테고리는 표본이 작으면
-// 인기순 상위권에 아예 안 걸려 결과가 자주 비므로, numOfRows를 넉넉히 잡는다.
-const CATEGORY_LIST_FETCH_SIZE = 50;
+// 검색된 장소와 겹쳐서 제외될 여유분까지 감안해 조금 더 받아온다.
+const NEARBY_FETCH_SIZE = NEARBY_LIMIT + 1;
+// "근처"의 기준 반경(미터). 도보~짧은 이동 거리로 갈 만한 범위로 잡는다.
+const NEARBY_RADIUS_METERS = 10_000;
+// GeolocationPositionError.PERMISSION_DENIED (브라우저 표준값, 매직넘버 대신 이름으로 남긴다)
+const GEOLOCATION_PERMISSION_DENIED_CODE = 1;
+// 카테고리 목록 한 번에 보여줄 개수. cat3(소분류)로 클라이언트에서 한 번 더 걸러내는
+// 카테고리(카페 등)는 표본이 작으면 이 20개 안에 하나도 안 걸려 결과가 빌 수 있는데,
+// 아래 CATEGORY_DAILY_PAGE_POOL_SIZE로 날짜마다 다른 pageNo를 도니 특정 날에 한해서만
+// 비어 보이는 정도로 완화된다.
+const CATEGORY_LIST_FETCH_SIZE = 20;
+// "카테고리 추천 장소"가 매일 완전히 똑같지 않도록, 인기순 TOP (이 값 * CATEGORY_LIST_FETCH_SIZE)위
+// 안에서 날짜 기준으로 pageNo를 순환시킨다 (dailyVariety.ts 참고).
+const CATEGORY_DAILY_PAGE_POOL_SIZE = 5;
+// 로딩 중 보여줄 스켈레톤 카드 개수. 실제로 몇 개가 올지 모르니, 화면에 바로 보이는
+// 정도로만 적당히 잡는다(전체 개수와 맞출 필요 없음).
+const CATEGORY_SKELETON_COUNT = 4;
 
 function MapSearch() {
   const [searchInput, setSearchInput] = useState("");
@@ -21,6 +38,7 @@ function MapSearch() {
   const [selectedCategory, setSelectedCategory] =
     useState<PlaceCategoryCode>(DEFAULT_CATEGORY);
   const { searches: recentSearches, addSearch } = useRecentSearches();
+  const userLocation = useUserLocation();
 
   const [categoryPlaces, setCategoryPlaces] = useState<Place[]>([]);
   const [isBrowseLoading, setIsBrowseLoading] = useState(false);
@@ -29,6 +47,10 @@ function MapSearch() {
   const [matchedPlace, setMatchedPlace] = useState<Place | undefined>();
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
+  const [isNearbyLoading, setIsNearbyLoading] = useState(false);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
 
   const isSearching = submittedTerm !== "";
 
@@ -54,14 +76,17 @@ function MapSearch() {
     setIsBrowseLoading(true);
     setBrowseError(null);
 
+    const today = new Date();
+
     areaBasedList({
       category: selectedCategory,
       numOfRows: CATEGORY_LIST_FETCH_SIZE,
+      pageNo: getDailyPageNo(CATEGORY_DAILY_PAGE_POOL_SIZE, today),
       signal: controller.signal,
     })
       .then((result) => {
         if (cancelled) return;
-        setCategoryPlaces(result.places);
+        setCategoryPlaces(seededShuffle(result.places, getTodaySeed(today)));
       })
       .catch((error) => {
         if (cancelled || (error instanceof DOMException && error.name === "AbortError")) {
@@ -122,10 +147,75 @@ function MapSearch() {
     };
   }, [submittedTerm, selectedCategory, isSearching]);
 
-  // 위치 기반 "근처" 개념이 아직 없어서, 같은 카테고리 목록에서 검색된 장소만 제외한 나머지를 보여준다.
-  const nearbyPlaces = categoryPlaces
-    .filter((place) => place.id !== matchedPlace?.id)
-    .slice(0, NEARBY_LIMIT);
+  // 검색 결과를 봤을 때만 "근처에서 가볼만한 곳"이 보이니, 검색 중이고 위치를 확보했을 때만 조회한다.
+  useEffect(() => {
+    if (!isSearching) {
+      setNearbyPlaces([]);
+      setNearbyError(null);
+      return;
+    }
+
+    if (userLocation.status === "loading") {
+      return;
+    }
+
+    if (userLocation.status === "error" || !userLocation.coords) {
+      setNearbyPlaces([]);
+      setNearbyError(
+        userLocation.errorCode === GEOLOCATION_PERMISSION_DENIED_CODE
+          ? "위치 권한을 허용하면 근처 장소를 보여드릴 수 있어요."
+          : "위치를 확인하지 못했어요.",
+      );
+      return;
+    }
+
+    const { latitude, longitude } = userLocation.coords;
+    const controller = new AbortController();
+    let cancelled = false;
+
+    setIsNearbyLoading(true);
+    setNearbyError(null);
+
+    locationBasedList({
+      category: selectedCategory,
+      latitude,
+      longitude,
+      radiusMeters: NEARBY_RADIUS_METERS,
+      numOfRows: NEARBY_FETCH_SIZE,
+      signal: controller.signal,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setNearbyPlaces(
+          result.places
+            .filter((place) => place.id !== matchedPlace?.id)
+            .slice(0, NEARBY_LIMIT),
+        );
+      })
+      .catch((error) => {
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) {
+          return;
+        }
+        console.error("근처 장소 조회 실패:", error);
+        setNearbyError("근처 장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsNearbyLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [
+    isSearching,
+    selectedCategory,
+    userLocation.status,
+    userLocation.coords,
+    userLocation.errorCode,
+    matchedPlace?.id,
+  ]);
 
   return (
     <main
@@ -144,6 +234,7 @@ function MapSearch() {
             value={searchInput}
             onChange={setSearchInput}
             onSubmit={handleSearchSubmit}
+            onClear={() => setSubmittedTerm("")}
           />
         </div>
 
@@ -176,7 +267,7 @@ function MapSearch() {
                 {`"${submittedTerm}" 검색 결과`}
               </h2>
               {isSearchLoading ? (
-                <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+                <PlaceThumbCardSkeleton />
               ) : searchError ? (
                 <p className="text-sm font-bold text-red-500">{searchError}</p>
               ) : matchedPlace ? (
@@ -192,16 +283,24 @@ function MapSearch() {
               <h2 className="mb-3 text-[20px] font-semibold text-[#754308]">
                 근처에서 가볼만한 곳
               </h2>
-              {isBrowseLoading ? (
-                <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
-              ) : browseError ? (
-                <p className="text-sm font-bold text-red-500">{browseError}</p>
-              ) : (
+              {userLocation.status === "loading" || isNearbyLoading ? (
+                <div className="flex flex-col gap-4">
+                  {Array.from({ length: NEARBY_LIMIT }).map((_, index) => (
+                    <PlaceThumbCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : nearbyError ? (
+                <p className="text-sm font-bold text-[#B3B3B3]">{nearbyError}</p>
+              ) : nearbyPlaces.length > 0 ? (
                 <div className="flex flex-col gap-4">
                   {nearbyPlaces.map((place) => (
                     <PlaceThumbCard key={place.id} place={place} />
                   ))}
                 </div>
+              ) : (
+                <p className="text-sm text-[#B3B3B3]">
+                  근처에 가볼만한 곳이 없어요
+                </p>
               )}
             </div>
           </>
@@ -211,7 +310,11 @@ function MapSearch() {
               카테고리 추천 장소
             </h2>
             {isBrowseLoading ? (
-              <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+              <div className="flex flex-col gap-4">
+                {Array.from({ length: CATEGORY_SKELETON_COUNT }).map((_, index) => (
+                  <PlaceThumbCardSkeleton key={index} />
+                ))}
+              </div>
             ) : browseError ? (
               <p className="text-sm font-bold text-red-500">{browseError}</p>
             ) : (
