@@ -45,6 +45,7 @@ function FavoriteTicketRow({
   }, [isOpen]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    console.log("[DIAG] pointerdown", event.pointerType, event.clientX, event.clientY);
     dragStartXRef.current = event.clientX;
     dragStartOffsetRef.current = offset;
     draggedRef.current = false;
@@ -59,13 +60,15 @@ function FavoriteTicketRow({
 
     const delta = event.clientX - dragStartXRef.current;
     if (Math.abs(delta) > DRAG_MOVE_THRESHOLD) {
+      console.log("[DIAG] marked dragged, delta=", delta);
       draggedRef.current = true;
     }
 
     setOffset(Math.min(0, Math.max(-REVEAL_WIDTH, dragStartOffsetRef.current + delta)));
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    console.log("[DIAG] pointerup", event.pointerType, "dragStartXRef=", dragStartXRef.current, "offset=", offset, "dragged=", draggedRef.current);
     if (dragStartXRef.current == null) {
       return;
     }
@@ -79,6 +82,7 @@ function FavoriteTicketRow({
   };
 
   const handleCardClick = (clickedActivity: DailyActivity) => {
+    console.log("[DIAG] card click fired, dragged=", draggedRef.current, "offset=", offset);
     if (draggedRef.current) {
       return;
     }
