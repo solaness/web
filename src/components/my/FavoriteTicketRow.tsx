@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import IconTrash from "../../assets/icons/icon-trash.svg?react";
 import VisitRecordCard from "../history/VisitRecordCard";
 import type { DailyActivity } from "../../data/historyCalendar";
@@ -10,6 +10,8 @@ const DRAG_OPEN_THRESHOLD = REVEAL_WIDTH / 2;
 
 interface FavoriteTicketRowProps {
   activity: DailyActivity;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelect: (activity: DailyActivity) => void;
   onRequestDelete: (activity: DailyActivity) => void;
 }
@@ -17,9 +19,12 @@ interface FavoriteTicketRowProps {
 /**
  * 방문 기록 티켓(VisitRecordCard)을 그대로 감싸서 왼쪽 스와이프 시 삭제 버튼이
  * 드러나게 하는 즐겨찾기 전용 래퍼 — 티켓 자체의 마크업/스타일은 건드리지 않는다.
+ * 열림 상태는 부모(Favorites)가 소유한다 — 한 번에 하나의 티켓만 열려있게 하기 위해서다.
  */
 function FavoriteTicketRow({
   activity,
+  isOpen,
+  onOpenChange,
   onSelect,
   onRequestDelete,
 }: FavoriteTicketRowProps) {
@@ -28,6 +33,13 @@ function FavoriteTicketRow({
   const dragStartXRef = useRef<number | null>(null);
   const dragStartOffsetRef = useRef(0);
   const draggedRef = useRef(false);
+
+  // 다른 티켓이 열려서 부모가 이 티켓을 닫으라고 내려주면(isOpen=false) 스스로 접는다.
+  useEffect(() => {
+    if (!isOpen) {
+      setOffset(0);
+    }
+  }, [isOpen]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     dragStartXRef.current = event.clientX;
@@ -57,7 +69,10 @@ function FavoriteTicketRow({
 
     dragStartXRef.current = null;
     setIsDragging(false);
-    setOffset((current) => (current <= -DRAG_OPEN_THRESHOLD ? -REVEAL_WIDTH : 0));
+
+    const next = offset <= -DRAG_OPEN_THRESHOLD ? -REVEAL_WIDTH : 0;
+    setOffset(next);
+    onOpenChange(next !== 0);
   };
 
   const handleCardClick = (clickedActivity: DailyActivity) => {
@@ -67,11 +82,14 @@ function FavoriteTicketRow({
 
     if (offset !== 0) {
       setOffset(0);
+      onOpenChange(false);
       return;
     }
 
     onSelect(clickedActivity);
   };
+
+  const isRevealed = offset !== 0;
 
   return (
     <div className="relative w-full max-w-[345px]">
@@ -83,9 +101,14 @@ function FavoriteTicketRow({
           type="button"
           onClick={() => {
             setOffset(0);
+            onOpenChange(false);
             onRequestDelete(activity);
           }}
           aria-label={`${activity.placeName} 즐겨찾기 삭제`}
+          // 스와이프로 드러나지 않은 상태에선 화면 밖으로 translate돼 시각적으로 안 보이므로,
+          // 키보드 탭/스크린리더 탐색에서도 걸리지 않게 접근성 트리에서 제외한다.
+          tabIndex={isRevealed ? 0 : -1}
+          aria-hidden={!isRevealed}
           className={`flex h-full w-[60px] items-center justify-center bg-[#FF544E] text-white ${
             isDragging ? "" : "transition-transform duration-200 ease-out"
           }`}

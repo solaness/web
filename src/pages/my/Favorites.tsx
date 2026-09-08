@@ -13,17 +13,25 @@ function Favorites() {
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
 
+  // user 객체 참조가 아니라 uid로만 비교한다 — 다른 탭에서의 재인증 등으로
+  // onAuthStateChanged가 동일 계정의 새 user 객체를 다시 흘려보내도 이 값은
+  // 그대로라, 세션 중 삭제한 즐겨찾기가 아래 useEffect에 의해 되살아나지 않는다.
+  const userId = user?.uid ?? null;
+
   const initialFavorites = useMemo(() => {
-    if (isGuest || !user) {
+    if (isGuest || !userId) {
       return [];
     }
 
     return SAMPLE_FAVORITES;
-  }, [isGuest, user]);
+  }, [isGuest, userId]);
 
   const [favorites, setFavorites] = useState<DailyActivity[]>(initialFavorites);
   const [pendingDelete, setPendingDelete] = useState<DailyActivity | null>(null);
   const [showDeleteToast, setShowDeleteToast] = useState(false);
+  // 한 번에 하나의 티켓만 스와이프로 열려있게 한다 — id를 들고 있다가 다른 티켓이
+  // 열리면 이전 티켓엔 isOpen=false가 내려가서 스스로 닫힌다.
+  const [openFavoriteId, setOpenFavoriteId] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -49,6 +57,7 @@ function Favorites() {
 
     setFavorites((current) => current.filter((item) => item.id !== pendingDelete.id));
     setPendingDelete(null);
+    setOpenFavoriteId((current) => (current === pendingDelete.id ? null : current));
 
     setShowDeleteToast(true);
     if (toastTimerRef.current) {
@@ -81,6 +90,10 @@ function Favorites() {
               <FavoriteTicketRow
                 key={activity.id}
                 activity={activity}
+                isOpen={openFavoriteId === activity.id}
+                onOpenChange={(open) =>
+                  setOpenFavoriteId(open ? activity.id : null)
+                }
                 onSelect={handleSelectFavorite}
                 onRequestDelete={setPendingDelete}
               />
