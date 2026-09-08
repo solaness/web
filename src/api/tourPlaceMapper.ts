@@ -16,8 +16,8 @@ export function mapTourItemToPlace(
 
   const thumbnailUrl = item.firstimage?.trim() || item.firstimage2?.trim() || "";
 
-  const lat = Number(item.mapy);
-  const lng = Number(item.mapx);
+  const lat = item.mapy?.trim() ? Number(item.mapy) : NaN;
+  const lng = item.mapx?.trim() ? Number(item.mapx) : NaN;
 
   return {
     id: item.contentid,

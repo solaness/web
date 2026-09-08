@@ -61,6 +61,17 @@ function App() {
             }
           />
 
+          {/* 상세 페이지는 하단 액션바(예약하기/길찾기)가 고정으로 깔려서 MainLayout의
+              BottomNav와 겹친다 — /chatbot과 같은 이유로 MainLayout 밖에 둔다. */}
+          <Route
+            path="/map/:id"
+            element={
+              <RequireAuth>
+                <MapDetail />
+              </RequireAuth>
+            }
+          />
+
           <Route
             element={
               <RequireAuth>
@@ -71,7 +82,6 @@ function App() {
             <Route path="/home" element={<Home />} />
 
             <Route path="/map" element={<MapSearch />} />
-            <Route path="/map/:id" element={<MapDetail />} />
 
             <Route path="/history" element={<HistoryMain />} />
             <Route path="/history/calendar" element={<Calendar />} />

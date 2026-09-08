@@ -46,6 +46,10 @@ function MapSearch() {
   // 카테고리가 바뀔 때마다(초기 진입 포함) 해당 카테고리 목록을 조회한다.
   useEffect(() => {
     const controller = new AbortController();
+    // StrictMode 등으로 effect가 두 번 실행되면 먼저 취소된(aborted) 호출의 뒤늦은
+    // then/catch/finally가 나중에 시작된 진짜 요청의 상태(로딩/에러)를 덮어쓸 수 있다 —
+    // 이 요청이 취소됐는지를 이 플래그로 직접 확인해서 막는다.
+    let cancelled = false;
 
     setIsBrowseLoading(true);
     setBrowseError(null);
@@ -55,17 +59,26 @@ function MapSearch() {
       numOfRows: CATEGORY_LIST_FETCH_SIZE,
       signal: controller.signal,
     })
-      .then((result) => setCategoryPlaces(result.places))
+      .then((result) => {
+        if (cancelled) return;
+        setCategoryPlaces(result.places);
+      })
       .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) {
           return;
         }
         console.error("장소 목록 조회 실패:", error);
         setBrowseError("장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
       })
-      .finally(() => setIsBrowseLoading(false));
+      .finally(() => {
+        if (cancelled) return;
+        setIsBrowseLoading(false);
+      });
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [selectedCategory]);
 
   // 검색어가 제출됐을 때만 검색을 실행한다.
@@ -77,6 +90,7 @@ function MapSearch() {
     }
 
     const controller = new AbortController();
+    let cancelled = false;
 
     setIsSearchLoading(true);
     setSearchError(null);
@@ -86,17 +100,26 @@ function MapSearch() {
       category: selectedCategory,
       signal: controller.signal,
     })
-      .then((result) => setMatchedPlace(result.places[0]))
+      .then((result) => {
+        if (cancelled) return;
+        setMatchedPlace(result.places[0]);
+      })
       .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) {
           return;
         }
         console.error("장소 검색 실패:", error);
         setSearchError("검색에 실패했어요. 잠시 후 다시 시도해 주세요.");
       })
-      .finally(() => setIsSearchLoading(false));
+      .finally(() => {
+        if (cancelled) return;
+        setIsSearchLoading(false);
+      });
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [submittedTerm, selectedCategory, isSearching]);
 
   // 위치 기반 "근처" 개념이 아직 없어서, 같은 카테고리 목록에서 검색된 장소만 제외한 나머지를 보여준다.

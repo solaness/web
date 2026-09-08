@@ -43,6 +43,14 @@ export interface TourApiEnvelope<T> {
   };
 }
 
+/** detailCommon2(상세 조회) 응답 항목 — 목록 조회 항목에 소개글/홈페이지 링크가 추가된다. */
+export interface TourApiDetailRawItem extends TourApiRawItem {
+  /** 소개 문구. 값이 없는 장소도 있다. */
+  overview?: string;
+  /** `<a href="...">...</a>` 형태의 HTML 문자열로 온다 — href만 추출해서 써야 한다. */
+  homepage?: string;
+}
+
 /** categoryCode2 응답 항목 (cat1/cat2 코드 조회용, scripts/inspect-tour-categories.mjs에서 사용) */
 export interface TourApiCategoryCodeItem {
   code: string;
