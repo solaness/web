@@ -8,6 +8,7 @@ import { useRecentSearches } from "../../hooks/useRecentSearches";
 import { useUserLocation } from "../../hooks/useUserLocation";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../../constants/categories";
 import { areaBasedList, locationBasedList, searchKeyword } from "../../api/tourApi";
+import { getDailyPageNo, getTodaySeed, seededShuffle } from "../../utils/dailyVariety";
 import type { Place, PlaceCategoryCode } from "../../types/place";
 
 const NEARBY_LIMIT = 4;
@@ -20,6 +21,9 @@ const GEOLOCATION_PERMISSION_DENIED_CODE = 1;
 // 카페처럼 cat3(소분류)로 클라이언트에서 한 번 더 걸러내는 카테고리는 표본이 작으면
 // 인기순 상위권에 아예 안 걸려 결과가 자주 비므로, numOfRows를 넉넉히 잡는다.
 const CATEGORY_LIST_FETCH_SIZE = 50;
+// "카테고리 추천 장소"가 매일 완전히 똑같지 않도록, 인기순 TOP (이 값 * CATEGORY_LIST_FETCH_SIZE)위
+// 안에서 날짜 기준으로 pageNo를 순환시킨다 (dailyVariety.ts 참고).
+const CATEGORY_DAILY_PAGE_POOL_SIZE = 5;
 
 function MapSearch() {
   const [searchInput, setSearchInput] = useState("");
@@ -66,14 +70,17 @@ function MapSearch() {
     setIsBrowseLoading(true);
     setBrowseError(null);
 
+    const today = new Date();
+
     areaBasedList({
       category: selectedCategory,
       numOfRows: CATEGORY_LIST_FETCH_SIZE,
+      pageNo: getDailyPageNo(CATEGORY_DAILY_PAGE_POOL_SIZE, today),
       signal: controller.signal,
     })
       .then((result) => {
         if (cancelled) return;
-        setCategoryPlaces(result.places);
+        setCategoryPlaces(seededShuffle(result.places, getTodaySeed(today)));
       })
       .catch((error) => {
         if (cancelled || (error instanceof DOMException && error.name === "AbortError")) {
