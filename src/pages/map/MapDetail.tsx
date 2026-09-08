@@ -44,6 +44,12 @@ function MapDetail() {
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const isTogglingBookmarkRef = useRef(false);
+  // 즐겨찾기 상태에 영향을 주는 비동기 작업(초기 조회, 토글 저장/삭제)이 여러 개
+  // 겹칠 수 있어서, 매번 새 값으로 늘려 "가장 나중에 시작된 작업"만 결과를 반영하게 한다.
+  // — 조회 응답이 사용자의 토글보다 늦게 와서 방금 저장한 상태를 덮어쓰거나, 장소를
+  // 이동한 뒤 이전 장소의 실패 처리가 새 장소의 상태를 덮어쓰는 걸 막는다.
+  const bookmarkOpIdRef = useRef(0);
+  const isLatestBookmarkOp = (opId: number) => opId === bookmarkOpIdRef.current;
 
   // 카드가 항상 화면 아래에 붙어있어야 해서(스크롤 가능한 긴 콘텐츠가 아니라 카드 자체가 짧다),
   // 네이티브 overflow 스크롤 대신 위/아래 스와이프·휠 제스처를 직접 누적해서 isScrolled를 전환한다.
@@ -108,21 +114,24 @@ function MapDetail() {
   }, [id, retryToken]);
 
   // place 상세 로딩과는 별개로, 이 장소가 이미 즐겨찾기돼 있는지 조회한다(placeId만 있으면 됨).
-  // 게스트는 즐겨찾기를 저장할 계정이 없으니 항상 false로 둔다.
+  // 게스트는 즐겨찾기를 저장할 계정이 없으니 항상 false로 둔다. retryToken도 의존성에
+  // 넣어야, 상세 조회 재시도로 위 effect가 isBookmarked를 false로 리셋했을 때 이 조회도
+  // 같이 다시 돌아서 실제 저장 상태로 바로잡는다.
   useEffect(() => {
-    // id가 바뀌면(다른 장소로 이동) 이전 장소에 대한 토글 요청은 더 이상 유효하지 않다.
+    // 새 조회가 시작됐으니 이전에 진행 중이던 토글은 더 이상 유효하지 않다.
     isTogglingBookmarkRef.current = false;
+    const opId = ++bookmarkOpIdRef.current;
+    let cancelled = false;
 
     if (!id || isGuest || !user) {
       setIsBookmarked(false);
       return;
     }
 
-    let cancelled = false;
-
     isPlaceBookmarked(user.uid, id)
       .then((bookmarked) => {
-        if (!cancelled) {
+        // opId 체크는 "더 최신 작업에 밀렸는지"를, cancelled는 "컴포넌트가 언마운트됐는지"를 막는다.
+        if (!cancelled && isLatestBookmarkOp(opId)) {
           setIsBookmarked(bookmarked);
         }
       })
@@ -133,7 +142,7 @@ function MapDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, user, isGuest]);
+  }, [id, user, isGuest, retryToken]);
 
   const handleToggleBookmark = async () => {
     if (isGuest || !user) {
@@ -148,6 +157,7 @@ function MapDetail() {
     }
 
     isTogglingBookmarkRef.current = true;
+    const opId = ++bookmarkOpIdRef.current;
     const nextBookmarked = !isBookmarked;
     setIsBookmarked(nextBookmarked);
 
@@ -166,9 +176,16 @@ function MapDetail() {
       }
     } catch (error) {
       console.error("즐겨찾기 저장에 실패했어요:", error);
-      setIsBookmarked(!nextBookmarked);
+      // 이 토글보다 나중에 시작된 작업(장소 이동 등)이 이미 있으면, 그 결과를 덮어쓰지 않는다.
+      if (isLatestBookmarkOp(opId)) {
+        setIsBookmarked(!nextBookmarked);
+      }
     } finally {
-      isTogglingBookmarkRef.current = false;
+      // 이 사이 장소를 이동해서 새 토글이 이미 진행 중이면(opId가 더 늘어나 있으면),
+      // 그 새 토글의 mutex를 여기서 잘못 풀어버리면 안 된다 — 자기 자신의 opId일 때만 푼다.
+      if (isLatestBookmarkOp(opId)) {
+        isTogglingBookmarkRef.current = false;
+      }
     }
   };
 
