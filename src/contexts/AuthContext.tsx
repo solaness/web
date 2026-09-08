@@ -24,7 +24,7 @@ interface AuthContextValue {
   isGuest: boolean;
   loading: boolean;
   loginWithGoogle: () => Promise<{ onboardingCompleted: boolean }>;
-  startGuestMode: () => void;
+  startGuestMode: () => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -65,7 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { onboardingCompleted };
   }, []);
 
-  const startGuestMode = useCallback(() => {
+  const startGuestMode = useCallback(async () => {
+    // Google 로그인이 남아있는 상태로 "로그인 없이 시작하기"를 누르면 Firebase Auth 세션이
+    // 그대로 유지돼서(onAuthStateChanged의 user가 안 바뀜) 게스트인데도 이전 계정 이름 등이
+    // 화면에 그대로 남아있는 버그가 있었다. 게스트 모드로 들어갈 땐 먼저 로그아웃해서
+    // user를 확실히 비운다.
+    if (auth.currentUser) {
+      await signOutUser();
+    }
+
     sessionStorage.setItem(GUEST_STORAGE_KEY, "true");
     setIsGuest(true);
   }, []);

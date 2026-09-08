@@ -50,9 +50,19 @@ function Login() {
     }
   };
 
-  const handleGuestStart = () => {
-    startGuestMode();
-    navigate(ONBOARDING_PATH);
+  const handleGuestStart = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      await startGuestMode();
+      navigate(ONBOARDING_PATH);
+    } catch (error) {
+      console.error("게스트 시작 실패:", error);
+      setErrorMessage("잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -101,7 +111,8 @@ function Login() {
 
           <button
             onClick={handleGuestStart}
-            className="flex h-[53px] w-full max-w-[322px] items-center justify-center gap-2 rounded-[25px] bg-[#FFAC27] text-[14px] font-bold leading-[22px] text-white shadow-[4px_4px_4px_0px_#8A3E0F40]"
+            disabled={isLoading}
+            className="flex h-[53px] w-full max-w-[322px] items-center justify-center gap-2 rounded-[25px] bg-[#FFAC27] text-[14px] font-bold leading-[22px] text-white shadow-[4px_4px_4px_0px_#8A3E0F40] disabled:opacity-50"
           >
             로그인 없이 시작하기
           </button>
