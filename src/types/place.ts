@@ -20,6 +20,12 @@ export interface Place {
   /** 위경도 — 카카오맵 연동(다음 이슈) 전까지는 미사용 */
   lat?: number;
   lng?: number;
+  /**
+   * "체험"(레포츠) 카테고리에서 TourAPI cat3(소분류) 기준으로 실내 활동인지 판별한 값
+   * (src/api/tourPlaceMapper.ts에서 계산). 그 외 카테고리에서는 항상 false — 햇빛 점수
+   * 계산(src/constants/sunScore.ts)에서만 쓰인다.
+   */
+  isIndoorExperience?: boolean;
 }
 
 /** 지도 상세 페이지(src/pages/map/MapDetail.tsx)용 상세 정보. */
