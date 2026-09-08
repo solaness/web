@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import PlaceThumbCard from "../../components/shared/PlaceThumbCard";
+import PlaceThumbCardSkeleton from "../../components/shared/PlaceThumbCardSkeleton";
 import CategoryFilterTabs from "../../components/shared/CategoryFilterTabs";
 import SearchBar from "../../components/map/SearchBar";
 import RecentSearchChips from "../../components/map/RecentSearchChips";
@@ -18,12 +19,17 @@ const NEARBY_FETCH_SIZE = NEARBY_LIMIT + 1;
 const NEARBY_RADIUS_METERS = 10_000;
 // GeolocationPositionError.PERMISSION_DENIED (브라우저 표준값, 매직넘버 대신 이름으로 남긴다)
 const GEOLOCATION_PERMISSION_DENIED_CODE = 1;
-// 카페처럼 cat3(소분류)로 클라이언트에서 한 번 더 걸러내는 카테고리는 표본이 작으면
-// 인기순 상위권에 아예 안 걸려 결과가 자주 비므로, numOfRows를 넉넉히 잡는다.
-const CATEGORY_LIST_FETCH_SIZE = 50;
+// 카테고리 목록 한 번에 보여줄 개수. cat3(소분류)로 클라이언트에서 한 번 더 걸러내는
+// 카테고리(카페 등)는 표본이 작으면 이 20개 안에 하나도 안 걸려 결과가 빌 수 있는데,
+// 아래 CATEGORY_DAILY_PAGE_POOL_SIZE로 날짜마다 다른 pageNo를 도니 특정 날에 한해서만
+// 비어 보이는 정도로 완화된다.
+const CATEGORY_LIST_FETCH_SIZE = 20;
 // "카테고리 추천 장소"가 매일 완전히 똑같지 않도록, 인기순 TOP (이 값 * CATEGORY_LIST_FETCH_SIZE)위
 // 안에서 날짜 기준으로 pageNo를 순환시킨다 (dailyVariety.ts 참고).
 const CATEGORY_DAILY_PAGE_POOL_SIZE = 5;
+// 로딩 중 보여줄 스켈레톤 카드 개수. 실제로 몇 개가 올지 모르니, 화면에 바로 보이는
+// 정도로만 적당히 잡는다(전체 개수와 맞출 필요 없음).
+const CATEGORY_SKELETON_COUNT = 4;
 
 function MapSearch() {
   const [searchInput, setSearchInput] = useState("");
@@ -260,7 +266,7 @@ function MapSearch() {
                 {`"${submittedTerm}" 검색 결과`}
               </h2>
               {isSearchLoading ? (
-                <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+                <PlaceThumbCardSkeleton />
               ) : searchError ? (
                 <p className="text-sm font-bold text-red-500">{searchError}</p>
               ) : matchedPlace ? (
@@ -277,7 +283,11 @@ function MapSearch() {
                 근처에서 가볼만한 곳
               </h2>
               {userLocation.status === "loading" || isNearbyLoading ? (
-                <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+                <div className="flex flex-col gap-4">
+                  {Array.from({ length: NEARBY_LIMIT }).map((_, index) => (
+                    <PlaceThumbCardSkeleton key={index} />
+                  ))}
+                </div>
               ) : nearbyError ? (
                 <p className="text-sm font-bold text-[#B3B3B3]">{nearbyError}</p>
               ) : nearbyPlaces.length > 0 ? (
@@ -299,7 +309,11 @@ function MapSearch() {
               카테고리 추천 장소
             </h2>
             {isBrowseLoading ? (
-              <p className="text-sm text-[#B3B3B3]">불러오는 중...</p>
+              <div className="flex flex-col gap-4">
+                {Array.from({ length: CATEGORY_SKELETON_COUNT }).map((_, index) => (
+                  <PlaceThumbCardSkeleton key={index} />
+                ))}
+              </div>
             ) : browseError ? (
               <p className="text-sm font-bold text-red-500">{browseError}</p>
             ) : (
