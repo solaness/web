@@ -1,7 +1,19 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "./config";
 import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiAnswerMap, WbtiTypeId } from "../types/wbti";
+import type { PlaceCategoryCode } from "../types/place";
 
 export interface OnboardingRegionInput {
   provinceCode: string;
@@ -113,4 +125,64 @@ export async function updateRegion(
     },
     { merge: true },
   );
+}
+
+export interface BookmarkInput {
+  placeId: string;
+  name: string;
+  address: string;
+  thumbnailUrl: string;
+  /** MapDetail의 PlaceDetail.categories 그대로 — 즐겨찾기 카드 뱃지/햇빛 점수 계산에 쓴다. */
+  categories: PlaceCategoryCode[];
+  isIndoorExperience: boolean;
+}
+
+export interface BookmarkRecord extends BookmarkInput {
+  savedAt: Date | null;
+}
+
+function bookmarkDocRef(uid: string, placeId: string) {
+  return doc(db, "users", uid, "bookmarks", placeId);
+}
+
+/** MapDetail 북마크 버튼을 켤 때 users/{uid}/bookmarks/{placeId}에 스냅샷을 저장한다. */
+export async function saveBookmark(uid: string, bookmark: BookmarkInput): Promise<void> {
+  await setDoc(bookmarkDocRef(uid, bookmark.placeId), {
+    ...bookmark,
+    savedAt: serverTimestamp(),
+  });
+}
+
+/** MapDetail 북마크 버튼을 끄거나, 즐겨찾기 목록에서 삭제할 때 사용. */
+export async function removeBookmark(uid: string, placeId: string): Promise<void> {
+  await deleteDoc(bookmarkDocRef(uid, placeId));
+}
+
+/** MapDetail 진입 시 이 장소가 이미 즐겨찾기돼 있는지 확인한다. */
+export async function isPlaceBookmarked(uid: string, placeId: string): Promise<boolean> {
+  const snapshot = await getDoc(bookmarkDocRef(uid, placeId));
+  return snapshot.exists();
+}
+
+/** 마이페이지 - 즐겨찾기 목록. 최근에 저장한 순서대로 정렬한다. */
+export async function getBookmarks(uid: string): Promise<BookmarkRecord[]> {
+  const bookmarksQuery = query(
+    collection(db, "users", uid, "bookmarks"),
+    orderBy("savedAt", "desc"),
+  );
+  const snapshot = await getDocs(bookmarksQuery);
+
+  return snapshot.docs.map((bookmarkDoc) => {
+    const data = bookmarkDoc.data();
+
+    return {
+      placeId: bookmarkDoc.id,
+      name: data.name,
+      address: data.address,
+      thumbnailUrl: data.thumbnailUrl,
+      categories: data.categories ?? [],
+      isIndoorExperience: data.isIndoorExperience ?? false,
+      savedAt: data.savedAt instanceof Timestamp ? data.savedAt.toDate() : null,
+    };
+  });
 }

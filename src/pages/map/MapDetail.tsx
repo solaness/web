@@ -10,7 +10,11 @@ import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
 import { getPlaceDetail } from "../../api/tourApi";
 import { getSunScore } from "../../constants/sunScore";
+import { isPlaceBookmarked, removeBookmark, saveBookmark } from "../../firebase/firestore";
+import { useAuth } from "../../contexts/AuthContext";
 import type { PlaceDetail } from "../../types/place";
+
+const LOGIN_PATH = "/onboarding/login";
 
 // 이 정도 위로 스와이프하면 소개글을 펼친다(아래로 다시 스와이프하면 되돌아간다).
 const SCROLL_EXPAND_THRESHOLD = 40;
@@ -29,6 +33,7 @@ function buildDirectionsUrl(place: PlaceDetail): string {
 function MapDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, isGuest } = useAuth();
 
   const [place, setPlace] = useState<PlaceDetail | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -38,6 +43,13 @@ function MapDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const isTogglingBookmarkRef = useRef(false);
+  // 즐겨찾기 상태에 영향을 주는 비동기 작업(초기 조회, 토글 저장/삭제)이 여러 개
+  // 겹칠 수 있어서, 매번 새 값으로 늘려 "가장 나중에 시작된 작업"만 결과를 반영하게 한다.
+  // — 조회 응답이 사용자의 토글보다 늦게 와서 방금 저장한 상태를 덮어쓰거나, 장소를
+  // 이동한 뒤 이전 장소의 실패 처리가 새 장소의 상태를 덮어쓰는 걸 막는다.
+  const bookmarkOpIdRef = useRef(0);
+  const isLatestBookmarkOp = (opId: number) => opId === bookmarkOpIdRef.current;
 
   // 카드가 항상 화면 아래에 붙어있어야 해서(스크롤 가능한 긴 콘텐츠가 아니라 카드 자체가 짧다),
   // 네이티브 overflow 스크롤 대신 위/아래 스와이프·휠 제스처를 직접 누적해서 isScrolled를 전환한다.
@@ -100,6 +112,82 @@ function MapDetail() {
 
     return () => controller.abort();
   }, [id, retryToken]);
+
+  // place 상세 로딩과는 별개로, 이 장소가 이미 즐겨찾기돼 있는지 조회한다(placeId만 있으면 됨).
+  // 게스트는 즐겨찾기를 저장할 계정이 없으니 항상 false로 둔다. retryToken도 의존성에
+  // 넣어야, 상세 조회 재시도로 위 effect가 isBookmarked를 false로 리셋했을 때 이 조회도
+  // 같이 다시 돌아서 실제 저장 상태로 바로잡는다.
+  useEffect(() => {
+    // 새 조회가 시작됐으니 이전에 진행 중이던 토글은 더 이상 유효하지 않다.
+    isTogglingBookmarkRef.current = false;
+    const opId = ++bookmarkOpIdRef.current;
+    let cancelled = false;
+
+    if (!id || isGuest || !user) {
+      setIsBookmarked(false);
+      return;
+    }
+
+    isPlaceBookmarked(user.uid, id)
+      .then((bookmarked) => {
+        // opId 체크는 "더 최신 작업에 밀렸는지"를, cancelled는 "컴포넌트가 언마운트됐는지"를 막는다.
+        if (!cancelled && isLatestBookmarkOp(opId)) {
+          setIsBookmarked(bookmarked);
+        }
+      })
+      .catch((error) => {
+        console.error("즐겨찾기 상태를 확인하지 못했어요:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user, isGuest, retryToken]);
+
+  const handleToggleBookmark = async () => {
+    if (isGuest || !user) {
+      navigate(LOGIN_PATH);
+      return;
+    }
+
+    // 요청이 진행 중일 때 다시 누르면 setDoc/deleteDoc이 뒤섞여 최종 저장 상태가
+    // 화면 표시와 어긋날 수 있어서, 이전 요청이 끝날 때까지 새 토글을 막는다.
+    if (!place || !id || isTogglingBookmarkRef.current) {
+      return;
+    }
+
+    isTogglingBookmarkRef.current = true;
+    const opId = ++bookmarkOpIdRef.current;
+    const nextBookmarked = !isBookmarked;
+    setIsBookmarked(nextBookmarked);
+
+    try {
+      if (nextBookmarked) {
+        await saveBookmark(user.uid, {
+          placeId: id,
+          name: place.name,
+          address: place.address,
+          thumbnailUrl: place.thumbnailUrl,
+          categories: place.categories,
+          isIndoorExperience: place.isIndoorExperience ?? false,
+        });
+      } else {
+        await removeBookmark(user.uid, id);
+      }
+    } catch (error) {
+      console.error("즐겨찾기 저장에 실패했어요:", error);
+      // 이 토글보다 나중에 시작된 작업(장소 이동 등)이 이미 있으면, 그 결과를 덮어쓰지 않는다.
+      if (isLatestBookmarkOp(opId)) {
+        setIsBookmarked(!nextBookmarked);
+      }
+    } finally {
+      // 이 사이 장소를 이동해서 새 토글이 이미 진행 중이면(opId가 더 늘어나 있으면),
+      // 그 새 토글의 mutex를 여기서 잘못 풀어버리면 안 된다 — 자기 자신의 opId일 때만 푼다.
+      if (isLatestBookmarkOp(opId)) {
+        isTogglingBookmarkRef.current = false;
+      }
+    }
+  };
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -217,7 +305,7 @@ function MapDetail() {
 
       <button
         type="button"
-        onClick={() => setIsBookmarked((prev) => !prev)}
+        onClick={handleToggleBookmark}
         aria-label={isBookmarked ? "북마크 해제" : "북마크"}
         aria-pressed={isBookmarked}
         className="absolute right-4 top-[54px] flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/40 text-white"

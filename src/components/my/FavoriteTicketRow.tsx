@@ -7,6 +7,9 @@ import type { DailyActivity } from "../../data/historyCalendar";
 // 왼쪽으로 스와이프하면 카드 너비 안에서 정확히 버튼과 맞물린다.
 const REVEAL_WIDTH = 60;
 const DRAG_OPEN_THRESHOLD = REVEAL_WIDTH / 2;
+// 실제 터치/트랙패드 탭은 손가락이 몇 px씩 흔들리기 마련이라, 너무 낮게 잡으면
+// 평범한 탭까지 "드래그"로 오판해서 클릭(상세 이동)이 씹혀버린다.
+const DRAG_MOVE_THRESHOLD = 10;
 
 interface FavoriteTicketRowProps {
   activity: DailyActivity;
@@ -55,7 +58,7 @@ function FavoriteTicketRow({
     }
 
     const delta = event.clientX - dragStartXRef.current;
-    if (Math.abs(delta) > 4) {
+    if (Math.abs(delta) > DRAG_MOVE_THRESHOLD) {
       draggedRef.current = true;
     }
 
