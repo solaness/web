@@ -105,6 +105,14 @@ function applyCategoryFilter(
   if (filter.cat2) {
     params.set("cat2", filter.cat2);
   }
+  // TourAPI는 cat3를 단일 값으로만 받는다 — cat3In이 정확히 1개(카페처럼)면 서버 요청
+  // 단계에서부터 필터링해서, 표본이 작은 카테고리가 인기순 상위 몇십 개 안에 하나도
+  // 안 걸려 결과가 통째로 비어 보이는 문제를 근본적으로 없앤다. cat3가 여러 개인
+  // 카테고리(산림/바다)는 API가 한 번에 여러 값을 못 받으므로 기존처럼 응답을 받은 뒤
+  // matchesCategoryFilter에서 클라이언트가 한 번 더 걸러낸다.
+  if (filter.cat3In?.length === 1) {
+    params.set("cat3", filter.cat3In[0]);
+  }
 }
 
 interface TourListResult {
