@@ -10,7 +10,11 @@ import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
 import { getPlaceDetail } from "../../api/tourApi";
 import { getSunScore } from "../../constants/sunScore";
+import { isPlaceBookmarked, removeBookmark, saveBookmark } from "../../firebase/firestore";
+import { useAuth } from "../../contexts/AuthContext";
 import type { PlaceDetail } from "../../types/place";
+
+const LOGIN_PATH = "/onboarding/login";
 
 // 이 정도 위로 스와이프하면 소개글을 펼친다(아래로 다시 스와이프하면 되돌아간다).
 const SCROLL_EXPAND_THRESHOLD = 40;
@@ -29,6 +33,7 @@ function buildDirectionsUrl(place: PlaceDetail): string {
 function MapDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, isGuest } = useAuth();
 
   const [place, setPlace] = useState<PlaceDetail | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -38,6 +43,7 @@ function MapDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const isTogglingBookmarkRef = useRef(false);
 
   // 카드가 항상 화면 아래에 붙어있어야 해서(스크롤 가능한 긴 콘텐츠가 아니라 카드 자체가 짧다),
   // 네이티브 overflow 스크롤 대신 위/아래 스와이프·휠 제스처를 직접 누적해서 isScrolled를 전환한다.
@@ -100,6 +106,71 @@ function MapDetail() {
 
     return () => controller.abort();
   }, [id, retryToken]);
+
+  // place 상세 로딩과는 별개로, 이 장소가 이미 즐겨찾기돼 있는지 조회한다(placeId만 있으면 됨).
+  // 게스트는 즐겨찾기를 저장할 계정이 없으니 항상 false로 둔다.
+  useEffect(() => {
+    // id가 바뀌면(다른 장소로 이동) 이전 장소에 대한 토글 요청은 더 이상 유효하지 않다.
+    isTogglingBookmarkRef.current = false;
+
+    if (!id || isGuest || !user) {
+      setIsBookmarked(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    isPlaceBookmarked(user.uid, id)
+      .then((bookmarked) => {
+        if (!cancelled) {
+          setIsBookmarked(bookmarked);
+        }
+      })
+      .catch((error) => {
+        console.error("즐겨찾기 상태를 확인하지 못했어요:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user, isGuest]);
+
+  const handleToggleBookmark = async () => {
+    if (isGuest || !user) {
+      navigate(LOGIN_PATH);
+      return;
+    }
+
+    // 요청이 진행 중일 때 다시 누르면 setDoc/deleteDoc이 뒤섞여 최종 저장 상태가
+    // 화면 표시와 어긋날 수 있어서, 이전 요청이 끝날 때까지 새 토글을 막는다.
+    if (!place || !id || isTogglingBookmarkRef.current) {
+      return;
+    }
+
+    isTogglingBookmarkRef.current = true;
+    const nextBookmarked = !isBookmarked;
+    setIsBookmarked(nextBookmarked);
+
+    try {
+      if (nextBookmarked) {
+        await saveBookmark(user.uid, {
+          placeId: id,
+          name: place.name,
+          address: place.address,
+          thumbnailUrl: place.thumbnailUrl,
+          categories: place.categories,
+          isIndoorExperience: place.isIndoorExperience ?? false,
+        });
+      } else {
+        await removeBookmark(user.uid, id);
+      }
+    } catch (error) {
+      console.error("즐겨찾기 저장에 실패했어요:", error);
+      setIsBookmarked(!nextBookmarked);
+    } finally {
+      isTogglingBookmarkRef.current = false;
+    }
+  };
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -217,7 +288,7 @@ function MapDetail() {
 
       <button
         type="button"
-        onClick={() => setIsBookmarked((prev) => !prev)}
+        onClick={handleToggleBookmark}
         aria-label={isBookmarked ? "북마크 해제" : "북마크"}
         aria-pressed={isBookmarked}
         className="absolute right-4 top-[54px] flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/40 text-white"

@@ -1,42 +1,93 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ConfirmModal from "../../components/shared/ConfirmModal";
+import LoadingScreen from "../../components/shared/LoadingScreen";
+import ErrorScreen from "../../components/shared/ErrorScreen";
 import FavoriteTicketRow from "../../components/my/FavoriteTicketRow";
 import { useAuth } from "../../contexts/AuthContext";
-import { SAMPLE_FAVORITES } from "../../data/favorites";
+import { CATEGORIES } from "../../constants/categories";
+import { getSunScore } from "../../constants/sunScore";
+import { getBookmarks, removeBookmark, type BookmarkRecord } from "../../firebase/firestore";
 import type { DailyActivity } from "../../data/historyCalendar";
 
 const TOAST_DURATION_MS = 2000;
 
+interface ToastState {
+  message: string;
+  variant: "success" | "error";
+}
+
+function toDateKey(date: Date | null): string {
+  const value = date ?? new Date();
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/** 티켓 컴포넌트(VisitRecordCard)를 그대로 재사용하기 위해 즐겨찾기 문서를 DailyActivity 모양으로 맞춘다. */
+function toFavoriteActivity(bookmark: BookmarkRecord): DailyActivity {
+  const primaryCategory = bookmark.categories[0] ?? "all";
+  const categoryLabel = CATEGORIES.find((option) => option.code === primaryCategory)?.label ?? "";
+
+  return {
+    id: bookmark.placeId,
+    placeId: bookmark.placeId,
+    placeName: bookmark.name,
+    address: bookmark.address,
+    category: categoryLabel,
+    sunshineScore: getSunScore(bookmark.categories, bookmark.isIndoorExperience),
+    sunshineMinutes: 0,
+    imageUrl: bookmark.thumbnailUrl || undefined,
+    visitStatus: categoryLabel,
+    date: toDateKey(bookmark.savedAt),
+  };
+}
+
 function Favorites() {
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
-
-  // user 객체 참조가 아니라 uid로만 비교한다 — 다른 탭에서의 재인증 등으로
-  // onAuthStateChanged가 동일 계정의 새 user 객체를 다시 흘려보내도 이 값은
-  // 그대로라, 세션 중 삭제한 즐겨찾기가 아래 useEffect에 의해 되살아나지 않는다.
   const userId = user?.uid ?? null;
 
-  const initialFavorites = useMemo(() => {
-    if (isGuest || !userId) {
-      return [];
-    }
-
-    return SAMPLE_FAVORITES;
-  }, [isGuest, userId]);
-
-  const [favorites, setFavorites] = useState<DailyActivity[]>(initialFavorites);
+  const [favorites, setFavorites] = useState<DailyActivity[]>([]);
+  const [loadStatus, setLoadStatus] = useState<"loading" | "success" | "error">("loading");
+  const [retryToken, setRetryToken] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<DailyActivity | null>(null);
-  const [showDeleteToast, setShowDeleteToast] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
   // 한 번에 하나의 티켓만 스와이프로 열려있게 한다 — id를 들고 있다가 다른 티켓이
   // 열리면 이전 티켓엔 isOpen=false가 내려가서 스스로 닫힌다.
   const [openFavoriteId, setOpenFavoriteId] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setFavorites(initialFavorites);
-  }, [initialFavorites]);
+    if (isGuest || !userId) {
+      setFavorites([]);
+      setLoadStatus("success");
+      return;
+    }
+
+    let cancelled = false;
+    setLoadStatus("loading");
+
+    getBookmarks(userId)
+      .then((bookmarks) => {
+        if (!cancelled) {
+          setFavorites(bookmarks.map(toFavoriteActivity));
+          setLoadStatus("success");
+        }
+      })
+      .catch((error) => {
+        console.error("즐겨찾기 목록을 불러오지 못했어요:", error);
+        if (!cancelled) {
+          setLoadStatus("error");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest, userId, retryToken]);
 
   useEffect(() => {
     return () => {
@@ -46,26 +97,39 @@ function Favorites() {
     };
   }, []);
 
-  const handleSelectFavorite = (activity: DailyActivity) => {
-    navigate(`/map/${activity.placeId}`);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!pendingDelete) {
-      return;
-    }
-
-    setFavorites((current) => current.filter((item) => item.id !== pendingDelete.id));
-    setPendingDelete(null);
-    setOpenFavoriteId((current) => (current === pendingDelete.id ? null : current));
-
-    setShowDeleteToast(true);
+  const showToast = (next: ToastState) => {
+    setToast(next);
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
     toastTimerRef.current = setTimeout(() => {
-      setShowDeleteToast(false);
+      setToast(null);
     }, TOAST_DURATION_MS);
+  };
+
+  const handleSelectFavorite = (activity: DailyActivity) => {
+    navigate(`/map/${activity.placeId}`);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || !userId) {
+      return;
+    }
+
+    const target = pendingDelete;
+    setPendingDelete(null);
+    setOpenFavoriteId((current) => (current === target.id ? null : current));
+
+    try {
+      await removeBookmark(userId, target.placeId);
+    } catch (error) {
+      console.error("즐겨찾기 삭제에 실패했어요:", error);
+      showToast({ message: "삭제에 실패했어요", variant: "error" });
+      return;
+    }
+
+    setFavorites((current) => current.filter((item) => item.id !== target.id));
+    showToast({ message: "장소를 삭제했어요", variant: "success" });
   };
 
   return (
@@ -84,33 +148,43 @@ function Favorites() {
       </header>
 
       <section className="relative z-10 mt-[27px]" aria-label="즐겨찾기 목록">
-        {favorites.length > 0 ? (
-          <div className="flex flex-col gap-[12px]">
-            {favorites.map((activity) => (
-              <FavoriteTicketRow
-                key={activity.id}
-                activity={activity}
-                isOpen={openFavoriteId === activity.id}
-                onOpenChange={(open) =>
-                  setOpenFavoriteId(open ? activity.id : null)
-                }
-                onSelect={handleSelectFavorite}
-                onRequestDelete={setPendingDelete}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className="flex h-[187px] w-full items-center justify-center rounded-[20px] border border-[#FFAC27] bg-white px-5 text-center"
-            style={{
-              boxShadow: "4px 4px 6px 0 #FFE2B2",
-            }}
-          >
-            <p className="text-[17px] font-bold leading-[24px] text-[#754308]">
-              아직 즐겨찾기한 장소가 없어요 🥺
-            </p>
-          </div>
+        {loadStatus === "loading" && <LoadingScreen message="즐겨찾기를 불러오는 중..." />}
+
+        {loadStatus === "error" && (
+          <ErrorScreen
+            message="즐겨찾기 목록을 불러오지 못했어요."
+            onRetry={() => setRetryToken((token) => token + 1)}
+          />
         )}
+
+        {loadStatus === "success" &&
+          (favorites.length > 0 ? (
+            <div className="flex flex-col gap-[12px]">
+              {favorites.map((activity) => (
+                <FavoriteTicketRow
+                  key={activity.id}
+                  activity={activity}
+                  isOpen={openFavoriteId === activity.id}
+                  onOpenChange={(open) =>
+                    setOpenFavoriteId(open ? activity.id : null)
+                  }
+                  onSelect={handleSelectFavorite}
+                  onRequestDelete={setPendingDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="flex h-[187px] w-full items-center justify-center rounded-[20px] border border-[#FFAC27] bg-white px-5 text-center"
+              style={{
+                boxShadow: "4px 4px 6px 0 #FFE2B2",
+              }}
+            >
+              <p className="text-[17px] font-bold leading-[24px] text-[#754308]">
+                아직 즐겨찾기한 장소가 없어요 🥺
+              </p>
+            </div>
+          ))}
       </section>
 
       {pendingDelete && (
@@ -124,13 +198,15 @@ function Favorites() {
         />
       )}
 
-      {showDeleteToast && (
+      {toast && (
         <div className="fixed inset-x-0 bottom-[100px] z-40 flex justify-center px-6">
           <div
             role="status"
-            className="flex h-[58px] w-full max-w-[345px] items-center justify-center rounded-[25px] bg-[#FD9419] shadow-[4px_4px_4px_0_rgba(138,62,15,0.25)]"
+            className={`flex h-[58px] w-full max-w-[345px] items-center justify-center rounded-[25px] shadow-[4px_4px_4px_0_rgba(138,62,15,0.25)] ${
+              toast.variant === "success" ? "bg-[#FD9419]" : "bg-[#FF544E]"
+            }`}
           >
-            <p className="text-[24px] font-bold text-white">장소를 삭제했어요</p>
+            <p className="text-[24px] font-bold text-white">{toast.message}</p>
           </div>
         </div>
       )}
