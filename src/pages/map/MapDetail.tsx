@@ -43,6 +43,7 @@ function MapDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const isTogglingBookmarkRef = useRef(false);
 
   // 카드가 항상 화면 아래에 붙어있어야 해서(스크롤 가능한 긴 콘텐츠가 아니라 카드 자체가 짧다),
   // 네이티브 overflow 스크롤 대신 위/아래 스와이프·휠 제스처를 직접 누적해서 isScrolled를 전환한다.
@@ -109,6 +110,9 @@ function MapDetail() {
   // place 상세 로딩과는 별개로, 이 장소가 이미 즐겨찾기돼 있는지 조회한다(placeId만 있으면 됨).
   // 게스트는 즐겨찾기를 저장할 계정이 없으니 항상 false로 둔다.
   useEffect(() => {
+    // id가 바뀌면(다른 장소로 이동) 이전 장소에 대한 토글 요청은 더 이상 유효하지 않다.
+    isTogglingBookmarkRef.current = false;
+
     if (!id || isGuest || !user) {
       setIsBookmarked(false);
       return;
@@ -137,10 +141,13 @@ function MapDetail() {
       return;
     }
 
-    if (!place || !id) {
+    // 요청이 진행 중일 때 다시 누르면 setDoc/deleteDoc이 뒤섞여 최종 저장 상태가
+    // 화면 표시와 어긋날 수 있어서, 이전 요청이 끝날 때까지 새 토글을 막는다.
+    if (!place || !id || isTogglingBookmarkRef.current) {
       return;
     }
 
+    isTogglingBookmarkRef.current = true;
     const nextBookmarked = !isBookmarked;
     setIsBookmarked(nextBookmarked);
 
@@ -160,6 +167,8 @@ function MapDetail() {
     } catch (error) {
       console.error("즐겨찾기 저장에 실패했어요:", error);
       setIsBookmarked(!nextBookmarked);
+    } finally {
+      isTogglingBookmarkRef.current = false;
     }
   };
 
