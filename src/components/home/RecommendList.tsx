@@ -1,11 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import HomePlaceThumbCard from "../shared/HomePlaceThumbCard";
-import type {
-  RecommendedPlace,
-} from "../../data/homeRecommendations";
+import type { Place } from "../../types/place";
 
 interface RecommendListProps {
-  places: RecommendedPlace[];
+  places: Place[];
 }
 
 function RecommendList({
