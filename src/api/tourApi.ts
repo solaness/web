@@ -254,16 +254,23 @@ async function requestTourList(
 
 interface AreaBasedListOptions extends CommonParamsOptions {
   category: PlaceCategoryCode;
+  /** TourAPI 자체 지역코드(시/도 단위) — src/constants/tourApiAreaCodes.ts 참고. 생략하면 전국 대상. */
+  areaCode?: string;
   signal?: AbortSignal;
 }
 
 export async function areaBasedList({
   category,
+  areaCode,
   signal,
   ...pagingOptions
 }: AreaBasedListOptions): Promise<TourListResult> {
   const params = buildCommonParams(pagingOptions);
   params.set("arrange", "Q"); // 조회순 정렬
+
+  if (areaCode) {
+    params.set("areaCode", areaCode);
+  }
 
   applyCategoryFilter(params, category);
 
