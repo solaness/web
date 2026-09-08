@@ -141,7 +141,7 @@ function MapDetail() {
     );
   }
 
-  const sunScore = getSunScore(place.categories, place.name);
+  const sunScore = getSunScore(place.categories, place.isIndoorExperience ?? false);
   const directionsUrl = buildDirectionsUrl(place);
 
   return (

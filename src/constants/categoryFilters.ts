@@ -51,6 +51,29 @@ const CAFE_CAT3 = [
   "A05020900", // 카페/전통찻집
 ] as const;
 
+/**
+ * cat1=A03(레포츠)의 cat3 중 "실내" 성격 활동만 — 나머지는 전부 실외로 간주한다
+ * (햇빛 점수 1단계 고도화, src/api/tourPlaceMapper.ts에서 사용).
+ * `npm run tour:categories`로 A03의 cat2 5종(A0301~A0305)을 확인한 뒤, 각 cat2에
+ * categoryCode2를 cat1+cat2로 다시 조회해 실제 cat3 이름을 보고 실내/실외를 나눴다 —
+ * 애매한 항목(경기장/카트/사격장 등)은 실외로 기본 처리, 이름이 명확히 실내인 것만 포함.
+ */
+export const INDOOR_EXPERIENCE_CAT3 = [
+  "A03020200", // 수련시설
+  "A03020400", // 인라인(실내 인라인 포함)
+  "A03021000", // 카지노
+  "A03021300", // 스케이트
+] as const;
+
+/**
+ * cat3만으로는 실내/실외가 갈리는 애매한 항목 — "수영"은 실내 수영장(예: 염주실내수영장)과
+ * 하천·계곡 물놀이터를 구분 안 해준다. 이런 cat3는 장소명에 "실내"가 들어있는지로 보조 판단한다
+ * (그 외 cat3는 이 텍스트 힌트를 쓰지 않는다 — INDOOR_EXPERIENCE_CAT3만으로 충분히 명확해서).
+ */
+export const AMBIGUOUS_INDOOR_HINT_CAT3 = [
+  "A03030700", // 수영
+] as const;
+
 export const CATEGORY_FILTERS: Record<PlaceCategoryCode, CategoryFilterSpec> =
   {
     all: {},
