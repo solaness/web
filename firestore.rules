@@ -23,6 +23,16 @@ service cloud.firestore {
           request.resource.data.onboardingCompleted == resource.data.onboardingCompleted
           || (resource.data.onboardingCompleted == false && request.resource.data.onboardingCompleted == true)
         );
+
+      // 즐겨찾기(북마크)는 각 사용자 문서 아래 서브컬렉션으로 두고, 본인 것만
+      // 읽고 쓸 수 있게 한다. 문서 id는 placeId라 목록 조회 없이도 단건 조회/삭제가 된다.
+      match /bookmarks/{placeId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.placeId == placeId;
+      }
     }
 
     // Deny by default for any collection not explicitly allowed above.

@@ -10,7 +10,11 @@ import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
 import { getPlaceDetail } from "../../api/tourApi";
 import { getSunScore } from "../../constants/sunScore";
+import { isPlaceBookmarked, removeBookmark, saveBookmark } from "../../firebase/firestore";
+import { useAuth } from "../../contexts/AuthContext";
 import type { PlaceDetail } from "../../types/place";
+
+const LOGIN_PATH = "/onboarding/login";
 
 // 이 정도 위로 스와이프하면 소개글을 펼친다(아래로 다시 스와이프하면 되돌아간다).
 const SCROLL_EXPAND_THRESHOLD = 40;
@@ -29,6 +33,7 @@ function buildDirectionsUrl(place: PlaceDetail): string {
 function MapDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, isGuest } = useAuth();
 
   const [place, setPlace] = useState<PlaceDetail | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -100,6 +105,63 @@ function MapDetail() {
 
     return () => controller.abort();
   }, [id, retryToken]);
+
+  // place 상세 로딩과는 별개로, 이 장소가 이미 즐겨찾기돼 있는지 조회한다(placeId만 있으면 됨).
+  // 게스트는 즐겨찾기를 저장할 계정이 없으니 항상 false로 둔다.
+  useEffect(() => {
+    if (!id || isGuest || !user) {
+      setIsBookmarked(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    isPlaceBookmarked(user.uid, id)
+      .then((bookmarked) => {
+        if (!cancelled) {
+          setIsBookmarked(bookmarked);
+        }
+      })
+      .catch((error) => {
+        console.error("즐겨찾기 상태를 확인하지 못했어요:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user, isGuest]);
+
+  const handleToggleBookmark = async () => {
+    if (isGuest || !user) {
+      navigate(LOGIN_PATH);
+      return;
+    }
+
+    if (!place || !id) {
+      return;
+    }
+
+    const nextBookmarked = !isBookmarked;
+    setIsBookmarked(nextBookmarked);
+
+    try {
+      if (nextBookmarked) {
+        await saveBookmark(user.uid, {
+          placeId: id,
+          name: place.name,
+          address: place.address,
+          thumbnailUrl: place.thumbnailUrl,
+          categories: place.categories,
+          isIndoorExperience: place.isIndoorExperience ?? false,
+        });
+      } else {
+        await removeBookmark(user.uid, id);
+      }
+    } catch (error) {
+      console.error("즐겨찾기 저장에 실패했어요:", error);
+      setIsBookmarked(!nextBookmarked);
+    }
+  };
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -217,7 +279,7 @@ function MapDetail() {
 
       <button
         type="button"
-        onClick={() => setIsBookmarked((prev) => !prev)}
+        onClick={handleToggleBookmark}
         aria-label={isBookmarked ? "북마크 해제" : "북마크"}
         aria-pressed={isBookmarked}
         className="absolute right-4 top-[54px] flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/40 text-white"

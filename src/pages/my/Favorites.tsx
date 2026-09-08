@@ -1,32 +1,51 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ConfirmModal from "../../components/shared/ConfirmModal";
+import LoadingScreen from "../../components/shared/LoadingScreen";
 import FavoriteTicketRow from "../../components/my/FavoriteTicketRow";
 import { useAuth } from "../../contexts/AuthContext";
-import { SAMPLE_FAVORITES } from "../../data/favorites";
+import { CATEGORIES } from "../../constants/categories";
+import { getSunScore } from "../../constants/sunScore";
+import { getBookmarks, removeBookmark, type BookmarkRecord } from "../../firebase/firestore";
 import type { DailyActivity } from "../../data/historyCalendar";
 
 const TOAST_DURATION_MS = 2000;
 
+function toDateKey(date: Date | null): string {
+  const value = date ?? new Date();
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/** 티켓 컴포넌트(VisitRecordCard)를 그대로 재사용하기 위해 즐겨찾기 문서를 DailyActivity 모양으로 맞춘다. */
+function toFavoriteActivity(bookmark: BookmarkRecord): DailyActivity {
+  const primaryCategory = bookmark.categories[0] ?? "all";
+  const categoryLabel = CATEGORIES.find((option) => option.code === primaryCategory)?.label ?? "";
+
+  return {
+    id: bookmark.placeId,
+    placeId: bookmark.placeId,
+    placeName: bookmark.name,
+    address: bookmark.address,
+    category: categoryLabel,
+    sunshineScore: getSunScore(bookmark.categories, bookmark.isIndoorExperience),
+    sunshineMinutes: 0,
+    imageUrl: bookmark.thumbnailUrl || undefined,
+    visitStatus: categoryLabel,
+    date: toDateKey(bookmark.savedAt),
+  };
+}
+
 function Favorites() {
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
-
-  // user 객체 참조가 아니라 uid로만 비교한다 — 다른 탭에서의 재인증 등으로
-  // onAuthStateChanged가 동일 계정의 새 user 객체를 다시 흘려보내도 이 값은
-  // 그대로라, 세션 중 삭제한 즐겨찾기가 아래 useEffect에 의해 되살아나지 않는다.
   const userId = user?.uid ?? null;
 
-  const initialFavorites = useMemo(() => {
-    if (isGuest || !userId) {
-      return [];
-    }
-
-    return SAMPLE_FAVORITES;
-  }, [isGuest, userId]);
-
-  const [favorites, setFavorites] = useState<DailyActivity[]>(initialFavorites);
+  const [favorites, setFavorites] = useState<DailyActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<DailyActivity | null>(null);
   const [showDeleteToast, setShowDeleteToast] = useState(false);
   // 한 번에 하나의 티켓만 스와이프로 열려있게 한다 — id를 들고 있다가 다른 티켓이
@@ -35,8 +54,34 @@ function Favorites() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setFavorites(initialFavorites);
-  }, [initialFavorites]);
+    if (isGuest || !userId) {
+      setFavorites([]);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    getBookmarks(userId)
+      .then((bookmarks) => {
+        if (!cancelled) {
+          setFavorites(bookmarks.map(toFavoriteActivity));
+        }
+      })
+      .catch((error) => {
+        console.error("즐겨찾기 목록을 불러오지 못했어요:", error);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest, userId]);
 
   useEffect(() => {
     return () => {
@@ -50,14 +95,23 @@ function Favorites() {
     navigate(`/map/${activity.placeId}`);
   };
 
-  const handleConfirmDelete = () => {
-    if (!pendingDelete) {
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || !userId) {
       return;
     }
 
-    setFavorites((current) => current.filter((item) => item.id !== pendingDelete.id));
+    const target = pendingDelete;
     setPendingDelete(null);
-    setOpenFavoriteId((current) => (current === pendingDelete.id ? null : current));
+    setOpenFavoriteId((current) => (current === target.id ? null : current));
+
+    try {
+      await removeBookmark(userId, target.placeId);
+    } catch (error) {
+      console.error("즐겨찾기 삭제에 실패했어요:", error);
+      return;
+    }
+
+    setFavorites((current) => current.filter((item) => item.id !== target.id));
 
     setShowDeleteToast(true);
     if (toastTimerRef.current) {
@@ -84,7 +138,9 @@ function Favorites() {
       </header>
 
       <section className="relative z-10 mt-[27px]" aria-label="즐겨찾기 목록">
-        {favorites.length > 0 ? (
+        {isLoading ? (
+          <LoadingScreen message="즐겨찾기를 불러오는 중..." />
+        ) : favorites.length > 0 ? (
           <div className="flex flex-col gap-[12px]">
             {favorites.map((activity) => (
               <FavoriteTicketRow
