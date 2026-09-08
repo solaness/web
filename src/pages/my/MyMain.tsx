@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import ConfirmModal from "../../components/shared/ConfirmModal";
@@ -13,10 +13,9 @@ import IconWithdraw from "../../assets/icons/icon-withdraw.svg?react";
 import googleLogo from "../../assets/images/google-logo.svg";
 import { useAuth } from "../../contexts/AuthContext";
 import { useGuestWbtiType } from "../../hooks/useGuestWbtiType";
+import { useUserProfile } from "../../hooks/useUserProfile";
 import { WBTI_TYPES } from "../../data/wbtiTypes";
-import { getUserWbtiTypeId } from "../../firebase/firestore";
 import { AccountPartiallyDeletedError } from "../../firebase/auth";
-import type { WbtiTypeId } from "../../types/wbti";
 
 const LOGIN_PATH = "/onboarding/login";
 const EDIT_PROFILE_PATH = "/my/edit";
@@ -26,45 +25,17 @@ function MyMain() {
   const { user, isGuest, logout, deleteAccount } = useAuth();
   const navigate = useNavigate();
   const { guestTypeId } = useGuestWbtiType();
-  const [loggedInTypeId, setLoggedInTypeId] = useState<WbtiTypeId | null>(null);
-  const [isFetchingWbtiType, setIsFetchingWbtiType] = useState(false);
+  // 로그인 사용자는 Firestore users/{uid} 문서 한 번 읽기로 닉네임+유형을 같이 가져오고,
+  // 게스트는 useGuestWbtiType(세션스토리지)에서 유형만 가져온다. user가 사라지면(로그아웃 등)
+  // 훅 내부에서 profile을 알아서 null로 비운다.
+  const { profile, isLoading: isFetchingWbtiType } = useUserProfile();
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [accountActionError, setAccountActionError] = useState<string | null>(null);
 
-  // 로그인 사용자는 Firestore에서, 게스트는 useGuestWbtiType(세션스토리지)에서 유형을 가져온다.
-  useEffect(() => {
-    if (isGuest || !user) {
-      // 로그아웃 등으로 user가 사라졌는데도 직전 로그인 사용자의 유형이 남아있지 않도록 비운다.
-      setLoggedInTypeId(null);
-      return;
-    }
-
-    let cancelled = false;
-    setIsFetchingWbtiType(true);
-
-    getUserWbtiTypeId(user.uid)
-      .then((typeId) => {
-        if (!cancelled) {
-          setLoggedInTypeId(typeId);
-        }
-      })
-      .catch((error) => {
-        console.error("유형 정보를 불러오지 못했어요:", error);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsFetchingWbtiType(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, isGuest]);
-
-  const typeId = isGuest ? guestTypeId : loggedInTypeId;
+  const typeId = isGuest ? guestTypeId : profile?.wbtiTypeId ?? null;
   const typeInfo = typeId ? WBTI_TYPES[typeId] : null;
+  const nickname = profile?.nickname ?? null;
 
   const handleGoLogin = () => navigate(LOGIN_PATH);
 
@@ -117,7 +88,7 @@ function MyMain() {
       </header>
 
       <section className="relative z-10 flex flex-col gap-6 px-[19px] pb-8 pt-6">
-        <ProfileHeader user={user} isGuest={isGuest} />
+        <ProfileHeader user={user} isGuest={isGuest} nickname={nickname} />
 
         {isFetchingWbtiType ? (
           <WbtiSummaryCardSkeleton />
