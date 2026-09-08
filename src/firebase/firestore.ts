@@ -1,5 +1,6 @@
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./config";
+import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiAnswerMap, WbtiTypeId } from "../types/wbti";
 
 export interface OnboardingRegionInput {
@@ -34,6 +35,22 @@ export async function saveOnboardingResult(
     },
     { merge: true },
   );
+}
+
+/**
+ * 마이페이지에서 로그인 사용자의 유형 카드를 그리기 위해 users/{uid}.wbtiTypeId만 읽어온다.
+ * 문서가 없거나(가입 직후 등) 아직 온보딩을 안 마쳐 필드가 없으면 null.
+ */
+export async function getUserWbtiTypeId(uid: string): Promise<WbtiTypeId | null> {
+  const userRef = doc(db, "users", uid);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const { wbtiTypeId } = snapshot.data() as { wbtiTypeId?: string };
+  return wbtiTypeId && isWbtiTypeId(wbtiTypeId) ? wbtiTypeId : null;
 }
 
 /**

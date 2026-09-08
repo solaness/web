@@ -85,6 +85,15 @@ export const WBTI_TYPES: Record<WbtiTypeId, WbtiTypeInfo> = {
   },
 };
 
+/**
+ * Firestore/세션스토리지 등 외부에서 읽어온 문자열이 실제 WBTI 8종 중 하나인지 런타임에
+ * 검증한다. 스키마 변경이나 수동 수정으로 낯선 값이 들어와도 WBTI_TYPES[typeId]가
+ * undefined로 조용히 깨지는 대신 여기서 걸러진다.
+ */
+export function isWbtiTypeId(value: string): value is WbtiTypeId {
+  return value in WBTI_TYPES;
+}
+
 function pickMajorityCode(
   codes: (WbtiAxisCode | undefined)[],
   poleA: WbtiAxisCode,
