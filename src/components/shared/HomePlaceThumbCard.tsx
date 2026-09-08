@@ -40,7 +40,7 @@ function HomePlaceThumbCard({
       </strong>
 
       <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#8F806E]">
-        {place.address}
+        {place.address || "주소 정보가 없어요"}
       </p>
     </button>
   );
