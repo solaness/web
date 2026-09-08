@@ -234,6 +234,7 @@ function MapSearch() {
             value={searchInput}
             onChange={setSearchInput}
             onSubmit={handleSearchSubmit}
+            onClear={() => setSubmittedTerm("")}
           />
         </div>
 
