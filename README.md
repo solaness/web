@@ -76,6 +76,9 @@ src/
    npm run dev          # 터미널 2: Vite dev 서버
    ```
    → `http://localhost:5173` 접속
+   - `npm run emulators`는 실행 전에 `functions`를 자동으로 빌드하지만, emulator가 떠 있는
+     동안 `functions/src`를 고치면 자동 반영되지 않는다 — 재빌드하려면 emulator를 껐다가
+     `npm run emulators`로 다시 띄우기
 
 ### 요구 사항
 - Node.js 18 이상
