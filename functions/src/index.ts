@@ -81,38 +81,94 @@ function toSingleQueryValue(value: unknown): string | undefined {
   return undefined;
 }
 
+/**
+ * Firebase Hosting rewrite를 거치면 req.ip가 Express의 trust proxy 설정에 기대게 되어
+ * 프록시 홉 뒤에서 모든 요청이 같은 IP로 뭉뚱그려질 위험이 있다 — 그 설정에 기대는 대신
+ * X-Forwarded-For의 맨 앞 값(원 클라이언트)을 직접 읽고, 없을 때만 req.ip로 대체한다.
+ * @param {Record<string, string | string[] | undefined>} headers req.headers.
+ * @param {string | undefined} fallbackIp req.ip (X-Forwarded-For가 없을 때 대체용).
+ * @return {string} rate limit 버킷 키로 쓸 클라이언트 식별자.
+ */
+function resolveClientKey(
+  headers: Record<string, string | string[] | undefined>,
+  fallbackIp: string | undefined,
+): string {
+  const forwardedFor = headers["x-forwarded-for"];
+  const forwardedValue = Array.isArray(forwardedFor) ?
+    forwardedFor[0] :
+    forwardedFor;
+  const firstIp = forwardedValue?.split(",")[0]?.trim();
+
+  return firstIp || fallbackIp || "unknown";
+}
+
 // 이 함수는 Hosting rewrite로만 노출할 의도지만, 배포되면 Cloud Functions URL 자체는
 // 별도 인증 없이 직접 호출도 가능하다 — 화이트리스트는 임의 경로로 새는 것만 막을 뿐,
 // 허용된 엔드포인트를 대량 호출하는 것까진 못 막는다. 인스턴스 단위 in-memory
-// 슬라이딩 윈도우로 클라이언트(IP)당 요청 수를 거칠게라도 제한해 TourAPI 일일
+// 슬라이딩 윈도우(근사치)로 클라이언트(IP)당 요청 수를 거칠게라도 제한해 TourAPI 일일
 // 할당량/비용이 스크립트 호출로 소진되는 것을 완화한다. 인스턴스가 여러 개로
 // 스케일되면 한도가 인스턴스 수만큼 느슨해지는 근사치일 뿐이라, 더 강한 보장이
 // 필요해지면 Firebase App Check 적용을 다음 단계로 고려한다.
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
-// 무한정 늘어나는 것만 방지하는 대략적인 상한.
+// 무한정 늘어나는 것만 방지하는 대략적인 상한 — 초과 시 통째로 비우지 않고
+// 만료된(직전 윈도우보다도 오래된) 항목만 정리한다(evictStaleClients 참고).
 const MAX_TRACKED_CLIENTS = 5_000;
-const requestCounts = new Map<string, { count: number; windowStart: number }>();
+
+interface RateLimitEntry {
+  windowIndex: number;
+  currCount: number;
+  prevCount: number;
+}
+
+const requestCounts = new Map<string, RateLimitEntry>();
 
 /**
- * 클라이언트(IP)가 현재 슬라이딩 윈도우 안에서 허용치를 넘겼는지 본다.
+ * 이미 만료된(직전 윈도우보다도 오래된) 항목만 골라 지운다 — 살아있는 클라이언트의
+ * 카운트를 건드리지 않아서, requestCounts.clear() 방식과 달리 이걸 반복 유도해서
+ * rate limit을 초기화시키는 공격이 통하지 않는다.
+ * @param {number} currentWindowIndex 지금 시각이 속한 윈도우 인덱스.
+ * @return {void}
+ */
+function evictStaleClients(currentWindowIndex: number): void {
+  for (const [key, entry] of requestCounts) {
+    if (entry.windowIndex < currentWindowIndex - 1) {
+      requestCounts.delete(key);
+    }
+  }
+}
+
+/**
+ * 클라이언트가 현재 창(window) 근처에서 허용치를 넘겼는지, 카운터 두 개(현재/직전 윈도우)를
+ * 가중 합산하는 sliding window counter 근사법으로 본다 — 단순 tumbling window와 달리
+ * 윈도우 경계를 걸친 순간적 버스트로 한도의 최대 2배까지 새는 걸 막는다.
  * @param {string} clientKey 요청자를 구분하는 키(IP 등).
  * @return {boolean} 제한에 걸리면 true.
  */
 function isRateLimited(clientKey: string): boolean {
   const now = Date.now();
-  const entry = requestCounts.get(clientKey);
+  const windowIndex = Math.floor(now / RATE_LIMIT_WINDOW_MS);
+  const elapsedRatio = (now % RATE_LIMIT_WINDOW_MS) / RATE_LIMIT_WINDOW_MS;
 
-  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-    if (requestCounts.size >= MAX_TRACKED_CLIENTS) {
-      requestCounts.clear();
-    }
-    requestCounts.set(clientKey, {count: 1, windowStart: now});
-    return false;
+  let entry = requestCounts.get(clientKey);
+
+  if (!entry || entry.windowIndex < windowIndex - 1) {
+    entry = {windowIndex, currCount: 0, prevCount: 0};
+  } else if (entry.windowIndex === windowIndex - 1) {
+    entry = {windowIndex, currCount: 0, prevCount: entry.currCount};
   }
 
-  entry.count += 1;
-  return entry.count > RATE_LIMIT_MAX_REQUESTS;
+  entry.currCount += 1;
+  requestCounts.set(clientKey, entry);
+
+  if (requestCounts.size >= MAX_TRACKED_CLIENTS) {
+    evictStaleClients(windowIndex);
+  }
+
+  const estimatedCount =
+    entry.prevCount * (1 - elapsedRatio) + entry.currCount;
+
+  return estimatedCount > RATE_LIMIT_MAX_REQUESTS;
 }
 
 /**
@@ -128,7 +184,7 @@ function isRateLimited(clientKey: string): boolean {
 export const tourApiProxy = onRequest(
   {secrets: [tourApiServiceKey], cors: true},
   async (req, res) => {
-    if (isRateLimited(req.ip ?? "unknown")) {
+    if (isRateLimited(resolveClientKey(req.headers, req.ip))) {
       res.status(429).json({
         resultCode: "429",
         resultMsg: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
