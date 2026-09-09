@@ -67,15 +67,19 @@ src/
 3. 환경변수 설정
    - 프로젝트 루트에 `.env` 파일 생성
    - `.env.example` 참고해서 Firebase config 값 채우기 (팀 내부 공유)
+   - `functions/.secret.local.example`을 `functions/.secret.local`로 복사하고 `TOUR_API_SERVICE_KEY` 채우기
+     (지도 검색/상세는 Cloud Functions 프록시를 거치므로 emulator에도 키가 필요함)
 
-4. 개발 서버 실행
+4. 개발 서버 실행 (터미널 2개 필요 — 지도 검색/상세는 Functions emulator가 떠 있어야 동작)
    ```bash
-   npm run dev
+   npm run emulators   # 터미널 1: Firebase Functions emulator (TourAPI 프록시)
+   npm run dev          # 터미널 2: Vite dev 서버
    ```
    → `http://localhost:5173` 접속
 
 ### 요구 사항
 - Node.js 18 이상
+- [firebase-tools](https://firebase.google.com/docs/cli) 전역 설치 (`npm install -g firebase-tools`), `firebase login` 완료
 
 <br>
 
