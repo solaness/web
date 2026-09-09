@@ -84,7 +84,10 @@ function toSingleQueryValue(value: unknown): string | undefined {
 /**
  * Firebase Hosting rewrite를 거치면 req.ip가 Express의 trust proxy 설정에 기대게 되어
  * 프록시 홉 뒤에서 모든 요청이 같은 IP로 뭉뚱그려질 위험이 있다 — 그 설정에 기대는 대신
- * X-Forwarded-For의 맨 앞 값(원 클라이언트)을 직접 읽고, 없을 때만 req.ip로 대체한다.
+ * X-Forwarded-For를 직접 읽는다. 단, 맨 앞 값은 클라이언트가 그대로 조작해서 보낼 수
+ * 있는 입력이라(프록시는 기존 값을 지우지 않고 뒤에 자기 홉만 덧붙인다) 신뢰할 수 없다 —
+ * Google 인프라(Hosting/Cloud Run)가 실제로 연결을 받은 피어를 확인해 마지막에
+ * 붙여주는 맨 뒤 값만 rate limit 키로 신뢰한다.
  * @param {Record<string, string | string[] | undefined>} headers req.headers.
  * @param {string | undefined} fallbackIp req.ip (X-Forwarded-For가 없을 때 대체용).
  * @return {string} rate limit 버킷 키로 쓸 클라이언트 식별자.
@@ -95,11 +98,12 @@ function resolveClientKey(
 ): string {
   const forwardedFor = headers["x-forwarded-for"];
   const forwardedValue = Array.isArray(forwardedFor) ?
-    forwardedFor[0] :
+    forwardedFor[forwardedFor.length - 1] :
     forwardedFor;
-  const firstIp = forwardedValue?.split(",")[0]?.trim();
+  const hops = forwardedValue?.split(",").map((hop) => hop.trim());
+  const trustedIp = hops?.[hops.length - 1];
 
-  return firstIp || fallbackIp || "unknown";
+  return trustedIp || fallbackIp || "unknown";
 }
 
 // 이 함수는 Hosting rewrite로만 노출할 의도지만, 배포되면 Cloud Functions URL 자체는
@@ -124,9 +128,12 @@ interface RateLimitEntry {
 const requestCounts = new Map<string, RateLimitEntry>();
 
 /**
- * 이미 만료된(직전 윈도우보다도 오래된) 항목만 골라 지운다 — 살아있는 클라이언트의
+ * 우선 이미 만료된(직전 윈도우보다도 오래된) 항목만 골라 지운다 — 살아있는 클라이언트의
  * 카운트를 건드리지 않아서, requestCounts.clear() 방식과 달리 이걸 반복 유도해서
- * rate limit을 초기화시키는 공격이 통하지 않는다.
+ * rate limit을 초기화시키는 공격이 통하지 않는다. 다만 서로 다른 클라이언트 키가
+ * 현재/직전 윈도우 안에서 계속 쏟아지면(rate limit을 우회하려는 IP 스푸핑이든, 실제
+ * 대량 트래픽이든) 이 정리만으론 하나도 안 지워질 수 있으므로, 그래도 상한을 넘는
+ * 만큼은 가장 오래 전에 추가된 항목부터 강제로 비워서 메모리 증가를 무조건 막는다.
  * @param {number} currentWindowIndex 지금 시각이 속한 윈도우 인덱스.
  * @return {void}
  */
@@ -135,6 +142,14 @@ function evictStaleClients(currentWindowIndex: number): void {
     if (entry.windowIndex < currentWindowIndex - 1) {
       requestCounts.delete(key);
     }
+  }
+
+  while (requestCounts.size >= MAX_TRACKED_CLIENTS) {
+    const oldestKey = requestCounts.keys().next().value;
+    if (oldestKey === undefined) {
+      break;
+    }
+    requestCounts.delete(oldestKey);
   }
 }
 
@@ -180,9 +195,15 @@ function isRateLimited(clientKey: string): boolean {
  * 대신 호출해준다. 로컬 개발도 firebase emulators로 이 함수를 그대로 띄우고
  * vite.config.ts가 거기로 프록시하므로, 로컬/배포가 동일한 코드 경로를 탄다
  * (클라이언트 번들에는 serviceKey가 전혀 들어가지 않는다).
+ *
+ * 정상 호출 경로 둘 다(배포: Hosting rewrite로 같은 오리진, 로컬: vite dev proxy가
+ * 서버사이드에서 emulator를 호출) 브라우저 cross-origin 요청이 아니라서 CORS가
+ * 필요 없다 — 굳이 열어두면 제3자 사이트가 브라우저에서 이 함수를 직접 호출해
+ * TourAPI 할당량을 쓰는 경로만 하나 더 생기므로 명시적으로 꺼둔다(firebase-functions는
+ * cors 옵션을 아예 생략하면 기본값이 true라, 생략이 아니라 false를 명시해야 한다).
  */
 export const tourApiProxy = onRequest(
-  {secrets: [tourApiServiceKey], cors: true},
+  {secrets: [tourApiServiceKey], cors: false},
   async (req, res) => {
     if (isRateLimited(resolveClientKey(req.headers, req.ip))) {
       res.status(429).json({
