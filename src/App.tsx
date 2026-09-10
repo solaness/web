@@ -31,6 +31,8 @@ import EditRegion from './pages/my/edit/EditRegion'
 import EditWbtiStep from './pages/my/edit/EditWbtiStep'
 import EditWbtiResult from './pages/my/edit/EditWbtiResult'
 
+import GuestNotice from "./components/shared/GuestNotice";
+
 function App() {
   return (
     <AuthProvider>
@@ -88,9 +90,53 @@ function App() {
 
             <Route path="/map" element={<MapSearch />} />
 
-            <Route path="/history" element={<HistoryMain />} />
-            <Route path="/history/calendar" element={<Calendar />} />
-            <Route path="/history/visits" element={<Visits />} />
+            <Route
+  path="/history"
+  element={
+    <RequireAuth
+      allowGuest={false}
+      guestFallback={
+        <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+          <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+        </div>
+      }
+    >
+      <HistoryMain />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/history/calendar"
+  element={
+    <RequireAuth
+      allowGuest={false}
+      guestFallback={
+        <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+          <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+        </div>
+      }
+    >
+      <Calendar />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/history/visits"
+  element={
+    <RequireAuth
+      allowGuest={false}
+      guestFallback={
+        <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+          <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+        </div>
+      }
+    >
+      <Visits />
+    </RequireAuth>
+  }
+/>
 
             <Route path="/my" element={<MyMain />} />
             <Route path="/my/edit" element={<EditProfile />} />
