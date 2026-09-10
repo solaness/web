@@ -11,6 +11,12 @@ import {setGlobalOptions} from "firebase-functions";
 import {onRequest} from "firebase-functions/https";
 import {defineSecret} from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
+import * as admin from "firebase-admin";
+
+admin.initializeApp();
+// rate limit 카운터를 인스턴스 로컬 메모리가 아니라 Firestore에 두어, 인스턴스 재시작이나
+// 스케일아웃으로 인스턴스가 여러 개 떠도 같은 클라이언트가 하나의 카운터를 공유하게 한다.
+const db = admin.firestore();
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -92,44 +98,72 @@ function toSingleQueryValue(value: unknown): string | undefined {
   return undefined;
 }
 
+interface NumericParamRule {
+  key: string;
+  min: number;
+  max: number;
+}
+
+// 요청 수 rate limit은 "몇 번 불렀는지"만 세지 "한 번에 얼마나 많은/이상한 데이터를
+// 요구했는지"는 안 본다 — numOfRows=-1, pageNo=0, radius=1.5 같은 값을 그대로 업스트림에
+// 넘기면 불필요한 TourAPI 에러 호출로 할당량과 rate limit만 낭비된다. 그렇다고 최솟값
+// 미달/정수가 아닌 값까지 조용히 지우거나 clamp해버리면 호출부의 실수를 감춰버리므로,
+// 이 값들은 clamp 대신 400으로 바로 거절한다. 최댓값 초과만 TourAPI 기본 상한 보호
+// 목적으로 clamp를 유지한다(넘겼다고 굳이 요청을 실패시킬 이유는 없다).
+const NUMERIC_PARAM_RULES: NumericParamRule[] = [
+  {key: "numOfRows", min: 1, max: MAX_NUM_OF_ROWS},
+  {key: "pageNo", min: 1, max: MAX_PAGE_NO},
+  {key: "radius", min: 1, max: MAX_RADIUS_METERS},
+];
+
 /**
- * 요청 수 rate limit은 "몇 번 불렀는지"만 세지 "한 번에 얼마나 많은 데이터를
- * 요구했는지"는 안 본다 — numOfRows 같은 값을 비정상적으로 크게 보내면 허용 범위
- * 안에서도 TourAPI 응답 크기/비용이 커질 수 있어, 숫자 파라미터를 상한으로 clamp한다.
- * @param {URLSearchParams} params 업스트림으로 보낼 파라미터(제자리에서 수정).
- * @param {string} key clamp할 파라미터 이름.
- * @param {number} max 허용할 최댓값.
- * @return {void}
+ * 숫자 파라미터 하나를 검사해 양의 정수 + 최솟값 조건을 강제하고, 유효하면 항상
+ * 정규화된(예: "007" → "7") 값으로 다시 써넣으며 최댓값을 넘는 경우는 clamp한다.
+ * 파라미터 자체가 없는 경우는 TourAPI 기본값을 쓰도록 그대로 둔다(에러 아님).
+ * @param {URLSearchParams} params 업스트림으로 보낼 파라미터(유효하면 항상 제자리에서 정규화).
+ * @param {NumericParamRule} rule 검사할 파라미터 이름과 허용 범위.
+ * @return {string | undefined} 유효하지 않으면 사용자에게 보여줄 에러 메시지, 유효하면 undefined.
  */
-function clampNumericParam(
+function validateNumericParam(
   params: URLSearchParams,
-  key: string,
-  max: number,
-): void {
-  const raw = params.get(key);
+  rule: NumericParamRule,
+): string | undefined {
+  const raw = params.get(rule.key);
   if (raw === null) {
-    return;
+    return undefined;
+  }
+
+  // 양의 정수(선행 0 포함, 부호/소수점 없음)만 허용 — Number()는 "1e2", "0x10", " 1"
+  // 같은 값도 통과시켜버려서 정수 검증에 쓰기엔 느슨하다.
+  if (!/^\d+$/.test(raw)) {
+    return `${rule.key}는 ${rule.min} 이상의 정수여야 합니다.`;
   }
 
   const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    // 숫자가 아닌 값은 TourAPI가 자체 기본값/에러 처리를 하도록 아예 지운다.
-    params.delete(key);
-    return;
+  if (parsed < rule.min) {
+    return `${rule.key}는 ${rule.min} 이상의 정수여야 합니다.`;
   }
 
-  if (parsed > max) {
-    params.set(key, String(max));
-  }
+  params.set(rule.key, String(Math.min(parsed, rule.max)));
+
+  return undefined;
 }
+
+// Google Cloud의 HTTPS 로드밸런서(Hosting/Cloud Functions v2가 모두 그 뒤에 있다)는
+// 들어온 X-Forwarded-For 뒤에 정확히 두 값, "<클라이언트 IP>, <로드밸런서 자체 IP>"만
+// 덧붙인다 — 맨 뒤 값은 클라이언트가 아니라 로드밸런서 자신의 IP라서 모든 요청에 동일하게
+// 찍히므로, 맨 뒤에서 이 값만큼 앞으로 간 위치(뒤에서 두 번째)가 실제 클라이언트 IP다.
+// https://cloud.google.com/load-balancing/docs/https#x-forwarded-for_header
+const GOOGLE_LB_APPENDED_HOPS = 2;
 
 /**
  * Firebase Hosting rewrite를 거치면 req.ip가 Express의 trust proxy 설정에 기대게 되어
  * 프록시 홉 뒤에서 모든 요청이 같은 IP로 뭉뚱그려질 위험이 있다 — 그 설정에 기대는 대신
- * X-Forwarded-For를 직접 읽는다. 단, 맨 앞 값은 클라이언트가 그대로 조작해서 보낼 수
- * 있는 입력이라(프록시는 기존 값을 지우지 않고 뒤에 자기 홉만 덧붙인다) 신뢰할 수 없다 —
- * Google 인프라(Hosting/Cloud Run)가 실제로 연결을 받은 피어를 확인해 마지막에
- * 붙여주는 맨 뒤 값만 rate limit 키로 신뢰한다.
+ * X-Forwarded-For를 직접 읽는다. 맨 앞 값들은 클라이언트가 그대로 조작해서 보낼 수 있는
+ * 입력이라(로드밸런서는 기존 값을 지우지 않고 뒤에 자기 홉만 덧붙인다) 신뢰할 수 없고,
+ * 맨 뒤 값도 클라이언트가 아니라 로드밸런서 자신의 IP라 신뢰할 수 없다 — 뒤에서
+ * GOOGLE_LB_APPENDED_HOPS번째(= 두 번째) 값만 로드밸런서가 실제로 확인한 클라이언트
+ * IP이므로 그 값만 rate limit 키로 신뢰한다.
  * @param {Record<string, string | string[] | undefined>} headers req.headers.
  * @param {string | undefined} fallbackIp req.ip (X-Forwarded-For가 없을 때 대체용).
  * @return {string} rate limit 버킷 키로 쓸 클라이언트 식별자.
@@ -142,23 +176,33 @@ function resolveClientKey(
   const forwardedValue = Array.isArray(forwardedFor) ?
     forwardedFor[forwardedFor.length - 1] :
     forwardedFor;
-  const hops = forwardedValue?.split(",").map((hop) => hop.trim());
-  const trustedIp = hops?.[hops.length - 1];
+  const hops = forwardedValue?.split(",")
+    .map((hop) => hop.trim())
+    .filter(Boolean);
+  const trustedIp = hops && hops.length >= GOOGLE_LB_APPENDED_HOPS ?
+    hops[hops.length - GOOGLE_LB_APPENDED_HOPS] :
+    undefined;
 
   return trustedIp || fallbackIp || "unknown";
 }
 
 // 이 함수는 Hosting rewrite로만 노출할 의도지만, 배포되면 Cloud Functions URL 자체는
 // 별도 인증 없이 직접 호출도 가능하다 — 화이트리스트는 임의 경로로 새는 것만 막을 뿐,
-// 허용된 엔드포인트를 대량 호출하는 것까진 못 막는다. 인스턴스 단위 in-memory
-// 슬라이딩 윈도우(근사치)로 클라이언트(IP)당 요청 수를 거칠게라도 제한해 TourAPI 일일
-// 할당량/비용이 스크립트 호출로 소진되는 것을 완화한다. 인스턴스별로 따로 세기 때문에
-// 실제 한도는 이 함수의 maxInstances(아래 tourApiProxy 옵션 참고) 배수만큼 느슨해지는
-// 근사치일 뿐이라, 더 강한 보장이 필요해지면 Firebase App Check 적용을 다음 단계로 고려한다.
+// 허용된 엔드포인트를 대량 호출하는 것까진 못 막는다. Firestore에 클라이언트(IP)별
+// 카운터를 두고 요청 수를 제한해 TourAPI 일일 할당량/비용이 스크립트 호출로 소진되는
+// 것을 완화한다. 인스턴스 로컬 메모리가 아니라 Firestore에 두는 이유는, 인메모리
+// 카운터는 인스턴스가 재시작되거나(배포, 크래시) maxInstances만큼 스케일아웃되면
+// 그만큼 한도가 초기화·분산되어 실질적으로 무력화되기 때문이다 — Firestore 트랜잭션으로
+// 모든 인스턴스가 같은 카운터를 공유해야 이 제한이 실제로 의미를 가진다. 이 제한은
+// 어디까지나 TourAPI 할당량 소진을 늦추는 비용 방어용이라, 진짜 요청자 인증이
+// 필요해지면 Firebase App Check 적용을 다음 단계로 고려한다.
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
-// 무한정 늘어나는 것만 방지하는 대략적인 상한 — 초과분은 가장 오래 안 쓰인(LRU) 항목부터 비운다.
-const MAX_TRACKED_CLIENTS = 5_000;
+const RATE_LIMIT_COLLECTION = "tourApiProxyRateLimits";
+// 카운터 문서가 무한정 쌓이는 것을 막기 위한 TTL(ms) — Firestore 콘솔/gcloud에서
+// 이 필드(expiresAt) 기준 TTL 정책을 별도로 등록해야 실제로 자동 삭제된다(계정 설정이라
+// 이 PR 범위 밖). 정책을 등록하지 않아도 동작 자체(제한 판단)에는 영향이 없다.
+const RATE_LIMIT_ENTRY_TTL_MS = RATE_LIMIT_WINDOW_MS * 2;
 
 interface RateLimitEntry {
   windowIndex: number;
@@ -166,51 +210,59 @@ interface RateLimitEntry {
   prevCount: number;
 }
 
-const requestCounts = new Map<string, RateLimitEntry>();
-
 /**
  * 클라이언트가 현재 창(window) 근처에서 허용치를 넘겼는지, 카운터 두 개(현재/직전 윈도우)를
  * 가중 합산하는 sliding window counter 근사법으로 본다 — 단순 tumbling window와 달리
  * 윈도우 경계를 걸친 순간적 버스트로 한도의 최대 2배까지 새는 걸 막는다.
  *
- * requestCounts가 MAX_TRACKED_CLIENTS를 넘으면 가장 오래 안 쓰인 항목부터 비운다 —
- * 기존 키라도 매번 delete 후 다시 set해서 Map의 삽입 순서를 "마지막 접근 순서"로
- * 유지하는 방식(JS Map은 이미 있는 키를 set()해도 순서를 안 옮긴다)으로, 맨 앞을
- * 지우는 것만으로 진짜 LRU eviction이 되게 한다 — 그냥 첫 삽입 순서로 지우면 활성
- * 클라이언트가 아직 안 끝난 윈도우 중간에 카운터를 초기화당해 한도를 우회하게 된다.
+ * 카운터를 Firestore 트랜잭션(읽고-계산하고-쓰기)으로 갱신해 여러 인스턴스가 동시에
+ * 같은 클라이언트의 요청을 처리해도 카운트가 유실되지 않게 한다. Firestore 자체
+ * 장애/지연으로 트랜잭션이 실패하면 이 제한 기능 하나 때문에 프록시 전체가 죽지 않도록
+ * fail-open(제한 안 걸린 것으로 간주)하고 에러만 로깅한다.
  * @param {string} clientKey 요청자를 구분하는 키(IP 등).
- * @return {boolean} 제한에 걸리면 true.
+ * @return {Promise<boolean>} 제한에 걸리면 true.
  */
-function isRateLimited(clientKey: string): boolean {
+async function isRateLimited(clientKey: string): Promise<boolean> {
   const now = Date.now();
   const windowIndex = Math.floor(now / RATE_LIMIT_WINDOW_MS);
   const elapsedRatio = (now % RATE_LIMIT_WINDOW_MS) / RATE_LIMIT_WINDOW_MS;
+  // Firestore 문서 id는 "/"를 쓸 수 없다 — IPv6 주소의 ":"는 허용되지만, 혹시 모를
+  // 예외 문자까지 안전하게 다루기 위해 encodeURIComponent로 한 번 감싼다.
+  const docRef = db
+    .collection(RATE_LIMIT_COLLECTION)
+    .doc(encodeURIComponent(clientKey));
 
-  let entry = requestCounts.get(clientKey);
+  try {
+    const estimatedCount = await db.runTransaction(async (tx) => {
+      const snapshot = await tx.get(docRef);
+      const existing = snapshot.data() as RateLimitEntry | undefined;
 
-  if (!entry || entry.windowIndex < windowIndex - 1) {
-    entry = {windowIndex, currCount: 0, prevCount: 0};
-  } else if (entry.windowIndex === windowIndex - 1) {
-    entry = {windowIndex, currCount: 0, prevCount: entry.currCount};
+      let entry: RateLimitEntry;
+      if (!existing || existing.windowIndex < windowIndex - 1) {
+        entry = {windowIndex, currCount: 0, prevCount: 0};
+      } else if (existing.windowIndex === windowIndex - 1) {
+        entry = {windowIndex, currCount: 0, prevCount: existing.currCount};
+      } else {
+        entry = existing;
+      }
+
+      entry.currCount += 1;
+
+      tx.set(docRef, {
+        ...entry,
+        expiresAt: admin.firestore.Timestamp.fromMillis(
+          now + RATE_LIMIT_ENTRY_TTL_MS,
+        ),
+      });
+
+      return entry.prevCount * (1 - elapsedRatio) + entry.currCount;
+    });
+
+    return estimatedCount > RATE_LIMIT_MAX_REQUESTS;
+  } catch (error) {
+    logger.error("rate limit check failed, failing open", error);
+    return false;
   }
-
-  entry.currCount += 1;
-
-  requestCounts.delete(clientKey);
-  requestCounts.set(clientKey, entry);
-
-  while (requestCounts.size > MAX_TRACKED_CLIENTS) {
-    const oldestKey = requestCounts.keys().next().value;
-    if (oldestKey === undefined) {
-      break;
-    }
-    requestCounts.delete(oldestKey);
-  }
-
-  const estimatedCount =
-    entry.prevCount * (1 - elapsedRatio) + entry.currCount;
-
-  return estimatedCount > RATE_LIMIT_MAX_REQUESTS;
 }
 
 /**
@@ -229,12 +281,23 @@ function isRateLimited(clientKey: string): boolean {
  * TourAPI 할당량을 쓰는 경로만 하나 더 생기므로 명시적으로 꺼둔다(firebase-functions는
  * cors 옵션을 아예 생략하면 기본값이 true라, 생략이 아니라 false를 명시해야 한다).
  *
- * maxInstances를 전역 기본값(10)보다 낮춰서, 인스턴스별로 따로 도는 rate limit의
- * 실질 상한(위 RATE_LIMIT_MAX_REQUESTS 주석 참고)이 과도하게 느슨해지지 않게 한다.
+ * maxInstances를 전역 기본값(10)보다 낮춰서, rate limit이 과도하게 많은 인스턴스로
+ * 흩어지는 것을 줄인다(Firestore 기반이라 인스턴스 수와 무관하게 정확하지만, 낮춰서
+ * 얻는 이점은 여전히 유효하다 — 동시 Firestore 트랜잭션 경합/비용을 줄인다).
  */
 export const tourApiProxy = onRequest(
   {secrets: [tourApiServiceKey], cors: false, maxInstances: 3},
   async (req, res) => {
+    // 읽기 전용 프록시라 GET만 허용한다 — Hosting rewrite는 POST/PUT/DELETE 등도
+    // 그대로 이 함수로 넘기므로, 다른 메서드는 아무 처리도 하기 전에 바로 거절한다.
+    if (req.method !== "GET") {
+      res.set("Allow", "GET").status(405).json({
+        resultCode: "405",
+        resultMsg: `허용되지 않는 메서드입니다: ${req.method}`,
+      });
+      return;
+    }
+
     // Hosting rewrite(배포)는 "/api/tour/areaBasedList2" 전체 경로를 그대로 넘기고,
     // 로컬 emulator 직결(vite.config.ts)은 접두사가 벗겨진 "/areaBasedList2"를 넘긴다 —
     // 두 경우 다 대응하기 위해 프록시 경로 접두사와 무관하게 마지막 세그먼트만 엔드포인트로 본다.
@@ -252,7 +315,7 @@ export const tourApiProxy = onRequest(
       return;
     }
 
-    if (isRateLimited(resolveClientKey(req.headers, req.ip))) {
+    if (await isRateLimited(resolveClientKey(req.headers, req.ip))) {
       res.status(429).json({
         resultCode: "429",
         resultMsg: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
@@ -268,9 +331,20 @@ export const tourApiProxy = onRequest(
           params.set(key, value);
         }
       }
-      clampNumericParam(params, "numOfRows", MAX_NUM_OF_ROWS);
-      clampNumericParam(params, "pageNo", MAX_PAGE_NO);
-      clampNumericParam(params, "radius", MAX_RADIUS_METERS);
+
+      // 파라미터 하나라도 유효하지 않으면(음수/0/소수 등) 업스트림을 호출하지 않고
+      // 바로 400으로 거절한다 — 불필요한 TourAPI 에러 호출로 할당량/rate limit을
+      // 낭비하지 않기 위해서다.
+      const validationErrors = NUMERIC_PARAM_RULES
+        .map((rule) => validateNumericParam(params, rule))
+        .filter((message): message is string => message !== undefined);
+      if (validationErrors.length > 0) {
+        res.status(400).json({
+          resultCode: "400",
+          resultMsg: validationErrors.join(" "),
+        });
+        return;
+      }
       // 클라이언트는 더 이상 serviceKey를 보내지 않지만, 혹시 들어와도 서버 시크릿으로
       // 덮어써서 클라이언트가 자기 키를 실어보내는 경로 자체를 원천 차단한다. 이 값을
       // 읽다가 실패해도(시크릿 미설정 등) 아래 catch에서 다른 실패와 동일하게
