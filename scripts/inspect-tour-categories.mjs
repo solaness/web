@@ -5,11 +5,12 @@ import process from "node:process";
  * src/constants/categoryFilters.ts의 cat2 TODO를 채우기 위한 1회성 조회용 스크립트.
  *
  * 사용법: npm run tour:categories
- * (.env의 VITE_TOUR_API_KEY를 그대로 사용 — 브라우저와 동일한 인코딩 함정이 있어
- *  scripts/build-regions.mjs와 동일하게 디코딩해서 사용한다)
+ * (.env의 TOUR_API_SERVICE_KEY를 그대로 사용 — 브라우저와 동일한 인코딩 함정이 있어
+ *  scripts/build-regions.mjs와 동일하게 디코딩해서 사용한다. 이 스크립트는 node로 직접
+ *  실행되어 클라이언트 번들에 들어가지 않으므로 VITE_ 접두사가 필요 없다.)
  */
 
-const RAW_SERVICE_KEY = process.env.VITE_TOUR_API_KEY?.trim() ?? "";
+const RAW_SERVICE_KEY = process.env.TOUR_API_SERVICE_KEY?.trim() ?? "";
 
 function normalizeServiceKey(serviceKey) {
   if (!serviceKey) {
@@ -27,7 +28,7 @@ const SERVICE_KEY = normalizeServiceKey(RAW_SERVICE_KEY);
 
 if (!SERVICE_KEY) {
   throw new Error(
-    "VITE_TOUR_API_KEY가 없습니다. 프로젝트 루트의 .env를 확인해주세요.",
+    "TOUR_API_SERVICE_KEY가 없습니다. 프로젝트 루트의 .env를 확인해주세요.",
   );
 }
 

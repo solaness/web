@@ -7,8 +7,9 @@ import type {
   TourApiRawItem,
 } from "./tourApi.types";
 
-// Vite dev 프록시 경유 경로 (vite.config.ts의 server.proxy 참고).
-// TODO(prod-proxy): 배포 시 Firebase Cloud Functions 프록시로 교체할 때 이 상수만 바꾸면 되게 한다.
+// 로컬(vite dev proxy → Functions emulator)과 배포(Firebase Hosting rewrite) 모두
+// 같은 상대 경로로 Cloud Functions의 tourApiProxy를 거친다 (vite.config.ts, firebase.json 참고).
+// serviceKey는 더 이상 클라이언트가 몰라도 되며, 프록시가 서버 사이드에서 붙여준다.
 const BASE_PATH = "/api/tour";
 
 const MOBILE_OS = "ETC";
@@ -53,22 +54,6 @@ export class TourApiError extends Error {
   }
 }
 
-function getServiceKey(): string {
-  const rawKey = import.meta.env.VITE_TOUR_API_KEY ?? "";
-
-  if (!rawKey) {
-    return "";
-  }
-
-  try {
-    // data.go.kr이 발급하는 키는 이미 URL-encode된 상태라, 그대로 URLSearchParams에 넣으면
-    // 요청 시점에 한 번 더 인코딩되어 인증에 실패한다(scripts/build-regions.mjs와 동일한 함정).
-    return decodeURIComponent(rawKey);
-  } catch {
-    return rawKey;
-  }
-}
-
 interface CommonParamsOptions {
   pageNo?: number;
   numOfRows?: number;
@@ -80,7 +65,6 @@ function buildCommonParams({
 }: CommonParamsOptions): URLSearchParams {
   const params = new URLSearchParams();
 
-  params.set("serviceKey", getServiceKey());
   params.set("MobileOS", MOBILE_OS);
   params.set("MobileApp", MOBILE_APP);
   params.set("_type", "json");
@@ -366,7 +350,6 @@ export async function getPlaceDetail({
   // detailCommon2는 defaultYN/overviewYN 같은 상세 옵션 플래그를 받지 않는다
   // (넘기면 INVALID_REQUEST_PARAMETER_ERROR) — overview 등은 플래그 없이도 기본 포함된다.
   const params = new URLSearchParams();
-  params.set("serviceKey", getServiceKey());
   params.set("MobileOS", MOBILE_OS);
   params.set("MobileApp", MOBILE_APP);
   params.set("_type", "json");
