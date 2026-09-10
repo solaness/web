@@ -1,10 +1,9 @@
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import solnyangHello from "../../assets/images/solnyang-hello.svg";
 import RecordMiniCalendar from "../../components/history/RecordMiniCalendar";
 import RecordMonthlyPlaces from "../../components/history/RecordMonthlyPlaces";
 import RecordMonthlySummary from "../../components/history/RecordMonthlySummary";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
-import { useAuth } from "../../contexts/AuthContext";
 import { SAMPLE_ACTIVITIES } from "../../data/historyCalendar";
 
 const now = new Date();
@@ -13,11 +12,6 @@ const DISPLAY_MONTH = now.getMonth();
 
 function HistoryMain() {
   const navigate = useNavigate();
-  const { isGuest } = useAuth();
-
-  if (isGuest) {
-    return <Navigate to="/history/calendar" replace />;
-  }
 
   const monthPrefix = `${DISPLAY_YEAR}-${String(
     DISPLAY_MONTH + 1,

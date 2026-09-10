@@ -4,10 +4,14 @@ import { useAuth } from "../../contexts/AuthContext";
 
 interface RequireAuthProps {
   children: ReactNode;
+  allowGuest?: boolean;
+  guestFallback?: ReactNode;
 }
 
 function RequireAuth({
   children,
+  allowGuest = true,
+  guestFallback,
 }: RequireAuthProps) {
   const {
     user,
@@ -26,10 +30,26 @@ function RequireAuth({
   }
 
   /*
-   * Google 로그인 사용자 또는 게스트는
-   * 메인 화면과 기록 탭에 접근할 수 있습니다.
+   * 로그인도 게스트로 시작도 하지 않은 경우
    */
   if (!user && !isGuest) {
+    return (
+      <Navigate
+        to="/onboarding/login"
+        replace
+      />
+    );
+  }
+    
+  /*
+  * 게스트 접근을 허용하지 않는 화면인데
+  * 로그인 사용자가 아닌 경우
+  */
+   if (!allowGuest && !user) {
+    if(guestFallback){
+      return guestFallback;
+    }
+    
     return (
       <Navigate
         to="/onboarding/login"

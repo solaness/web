@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+@theme {
+  /* 온보딩 인트로 "오늘의 햇빛 충전 점수" 슬라이드 아이콘들이 위아래로 둥실둥실 떠 있는 느낌을 준다. */
+  --animate-float: float 2.4s ease-in-out infinite;
+  /* 같은 슬라이드의 아이콘 줄이 옆으로 끊김없이 무한 이동하는 마퀴. 목록을 통째로 두 번
+     이어붙인 뒤 정확히 -50%만큼 옮기면 이어붙인 지점이 안 보이고 매끄럽게 반복된다. */
+  --animate-marquee: marquee 14s linear infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
