@@ -11,7 +11,7 @@ export default function GuestNotice({
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-      <p className="text-base font-bold text-gray-800">{message}</p>
+      <p className="text-base font-bold text-[#754308]">{message}</p>
       <button
         onClick={() => navigate("/onboarding/login")}
         className="rounded-[25px] bg-[#FFAC27] px-6 py-3 text-sm font-bold text-white"
