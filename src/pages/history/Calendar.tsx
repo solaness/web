@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -8,11 +9,16 @@ import {
 import DailyActivityCard from "../../components/history/DailyActivityCard";
 import HistoryEmptyState from "../../components/history/HistoryEmptyState";
 import MonthlyCalendar from "../../components/history/MonthlyCalendar";
+import LoadingScreen from "../../components/shared/LoadingScreen";
+import ErrorScreen from "../../components/shared/ErrorScreen";
 import {
   useAuth,
 } from "../../contexts/AuthContext";
 import {
-  SAMPLE_ACTIVITIES,
+  getVisitRecords,
+} from "../../firebase/firestore";
+import type {
+  DailyActivity,
 } from "../../data/historyCalendar";
 
 const INITIAL_YEAR = 2026;
@@ -50,23 +56,48 @@ function Calendar() {
     month + 1,
   ).padStart(2, "0")}`;
 
-  /*
-   * 로그인 사용자는 UI 확인용 샘플 데이터를 사용합니다.
-   * 게스트는 기록이 없는 상태를 표시합니다.
-   *
-   * Firestore 연결 후 SAMPLE_ACTIVITIES를
-   * 실제 조회 결과로 교체하면 됩니다.
-   */
-  const availableActivities = useMemo(
-    () => {
-      if (isGuest || !user) {
-        return [];
-      }
+  const userId = user?.uid ?? null;
 
-      return SAMPLE_ACTIVITIES;
-    },
-    [isGuest, user],
-  );
+  const [availableActivities, setAvailableActivities] =
+    useState<DailyActivity[]>([]);
+
+  const [loadStatus, setLoadStatus] =
+    useState<"loading" | "success" | "error">("loading");
+
+  const [retryToken, setRetryToken] = useState(0);
+
+  /*
+   * 로그인 사용자는 본인의 Firestore 방문 기록을 불러옵니다.
+   * 게스트는 기록이 없는 상태를 표시합니다.
+   */
+  useEffect(() => {
+    if (isGuest || !userId) {
+      setAvailableActivities([]);
+      setLoadStatus("success");
+      return;
+    }
+
+    let cancelled = false;
+    setLoadStatus("loading");
+
+    getVisitRecords(userId)
+      .then((records) => {
+        if (!cancelled) {
+          setAvailableActivities(records);
+          setLoadStatus("success");
+        }
+      })
+      .catch((error) => {
+        console.error("방문 기록을 불러오지 못했어요:", error);
+        if (!cancelled) {
+          setLoadStatus("error");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest, userId, retryToken]);
 
   /*
    * 현재 화면에 표시된 연도와 월에 해당하는
@@ -231,6 +262,19 @@ function Calendar() {
         </h1>
       </header>
 
+      {loadStatus === "loading" && (
+        <LoadingScreen message="방문 기록을 불러오는 중..." />
+      )}
+
+      {loadStatus === "error" && (
+        <ErrorScreen
+          message="방문 기록을 불러오지 못했어요."
+          onRetry={() => setRetryToken((token) => token + 1)}
+        />
+      )}
+
+      {loadStatus === "success" && (
+        <>
       <div className="mt-8">
         <MonthlyCalendar
           year={year}
@@ -293,6 +337,8 @@ function Calendar() {
           </button>
         )}
       </div>
+        </>
+      )}
     </main>
   );
 }

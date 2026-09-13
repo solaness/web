@@ -5,7 +5,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
-import { addActivity } from "../../data/historyCalendar";
+import { useAuth } from "../../contexts/AuthContext";
+import { addVisitRecord } from "../../firebase/firestore";
 import { getSunScore } from "../../constants/sunScore";
 import { CATEGORIES } from "../../constants/categories";
 import sunIcon from "../../assets/images/sun.svg";
@@ -44,12 +45,16 @@ function minutesBetween(start: string, end: string): number | null {
 function VisitRecordForm() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const userId = user?.uid ?? null;
   const { place, date } =
     (location.state as VisitRecordFormLocationState | null) ?? {};
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [activityNote, setActivityNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   if (!place || !date) {
     return (
@@ -76,32 +81,38 @@ function VisitRecordForm() {
     startTime && endTime && sunshineMinutes === null,
   );
 
-  const canSave = sunshineMinutes !== null;
+  const canSave = sunshineMinutes !== null && !isSaving && userId !== null;
 
-  const handleSave = () => {
-    if (sunshineMinutes === null) {
+  const handleSave = async () => {
+    if (sunshineMinutes === null || !userId) {
       return;
     }
 
-    const newId = `activity-${Date.now()}`;
+    setIsSaving(true);
+    setSaveError(null);
 
-    addActivity({
-      id: newId,
-      date,
-      placeId: place.id,
-      placeName: place.name,
-      address: place.address,
-      category: categoryLabel,
-      sunshineScore: scorePerMinute * sunshineMinutes,
-      sunshineMinutes,
-      scorePerMinute,
-      visitStartTime: startTime,
-      visitEndTime: endTime,
-      activityNote: activityNote.trim() || undefined,
-      imageUrl: place.thumbnailUrl,
-    });
+    try {
+      const newId = await addVisitRecord(userId, {
+        date,
+        placeId: place.id,
+        placeName: place.name,
+        address: place.address,
+        category: categoryLabel,
+        sunshineScore: scorePerMinute * sunshineMinutes,
+        sunshineMinutes,
+        scorePerMinute,
+        visitStartTime: startTime,
+        visitEndTime: endTime,
+        activityNote: activityNote.trim() || undefined,
+        imageUrl: place.thumbnailUrl,
+      });
 
-    navigate(`/history/visits/${newId}`, { replace: true });
+      navigate(`/history/visits/${newId}`, { replace: true });
+    } catch (error) {
+      console.error("방문 기록 저장에 실패했어요:", error);
+      setSaveError("저장에 실패했어요. 잠시 후 다시 시도해 주세요.");
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -251,13 +262,17 @@ function VisitRecordForm() {
           />
         </section>
 
+        {saveError && (
+          <p className="text-center text-[12px] text-red-500">{saveError}</p>
+        )}
+
         <button
           type="button"
           disabled={!canSave}
           className="h-[53px] w-full rounded-[25px] bg-[#FFAC27] text-[14px] font-bold text-white shadow-[4px_4px_4px_rgba(138,62,15,0.25)] transition-colors hover:bg-[#F78903] active:bg-[#E97B00] disabled:cursor-not-allowed disabled:bg-[#E0E0E0] disabled:shadow-none"
           onClick={handleSave}
         >
-          기록 저장하기
+          {isSaving ? "저장하는 중..." : "기록 저장하기"}
         </button>
       </div>
     </main>

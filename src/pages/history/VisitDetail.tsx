@@ -1,10 +1,18 @@
 import {
+  useEffect,
+  useState,
+} from "react";
+import {
   Navigate,
   useNavigate,
   useParams,
 } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
-import { SAMPLE_ACTIVITIES } from "../../data/historyCalendar";
+import LoadingScreen from "../../components/shared/LoadingScreen";
+import ErrorScreen from "../../components/shared/ErrorScreen";
+import { useAuth } from "../../contexts/AuthContext";
+import { getVisitRecord } from "../../firebase/firestore";
+import type { DailyActivity } from "../../data/historyCalendar";
 import sunIcon from "../../assets/images/sun.svg";
 import pencilIcon from "../../assets/images/pencil.svg";
 import calendarIcon from "../../assets/images/calendar.svg";
@@ -57,11 +65,54 @@ function formatDuration(minutes: number) {
 function VisitDetail() {
   const navigate = useNavigate();
   const { recordId } = useParams();
+  const { user } = useAuth();
+  const userId = user?.uid ?? null;
 
-  const activity =
-    SAMPLE_ACTIVITIES.find(
-      (item) => item.id === recordId,
+  const [activity, setActivity] = useState<DailyActivity | null>(null);
+  const [loadStatus, setLoadStatus] =
+    useState<"loading" | "success" | "error">("loading");
+  const [retryToken, setRetryToken] = useState(0);
+
+  useEffect(() => {
+    if (!recordId || !userId) {
+      setLoadStatus("success");
+      return;
+    }
+
+    let cancelled = false;
+    setLoadStatus("loading");
+
+    getVisitRecord(userId, recordId)
+      .then((record) => {
+        if (!cancelled) {
+          setActivity(record);
+          setLoadStatus("success");
+        }
+      })
+      .catch((error) => {
+        console.error("방문 기록을 불러오지 못했어요:", error);
+        if (!cancelled) {
+          setLoadStatus("error");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId, userId, retryToken]);
+
+  if (loadStatus === "loading") {
+    return <LoadingScreen message="방문 기록을 불러오는 중..." />;
+  }
+
+  if (loadStatus === "error") {
+    return (
+      <ErrorScreen
+        message="방문 기록을 불러오지 못했어요."
+        onRetry={() => setRetryToken((token) => token + 1)}
+      />
     );
+  }
 
   if (!recordId || !activity) {
     return (

@@ -47,6 +47,32 @@ service cloud.firestore {
           && request.resource.data.isIndoorExperience is bool
           && request.resource.data.savedAt == request.time;
       }
+
+      // 방문 기록도 북마크와 같은 원리로 사용자 문서 아래 서브컬렉션에 둔다. 다만 같은
+      // 장소를 여러 날 방문할 수 있어 문서 id를 placeId로 고정할 수 없으므로 Firestore가
+      // 자동 생성한 id를 그대로 쓴다(= docId를 특정 필드와 비교하는 제약이 없다).
+      // update/delete는 앱에 해당 기능이 아직 없어 열어두지 않는다(추가되면 그때 규칙도 추가).
+      match /visitRecords/{recordId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly([
+            'date', 'placeId', 'placeName', 'address', 'category',
+            'sunshineScore', 'sunshineMinutes', 'scorePerMinute',
+            'visitStartTime', 'visitEndTime', 'activityNote', 'imageUrl',
+            'visitStatus', 'createdAt',
+          ])
+          && request.resource.data.date is string
+          && request.resource.data.placeId is string
+          && request.resource.data.placeName is string
+          && request.resource.data.address is string
+          && request.resource.data.category is string
+          && request.resource.data.sunshineScore is number
+          && request.resource.data.sunshineMinutes is number
+          && request.resource.data.scorePerMinute is number
+          && request.resource.data.createdAt == request.time;
+      }
     }
 
     // Deny by default for any collection not explicitly allowed above.
