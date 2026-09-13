@@ -1,32 +1,94 @@
-# React + TypeScript + Vite
+# 🌞 Solaness
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> 나의 기분에 맞는, 나만의 힐링스팟
 
-Currently, two official plugins are available:
+Solaness는 감정 상태와 실시간 환경(날씨·일조량)을 기반으로 사용자에게 맞는 힐링 장소를 추천해주는 반응형 모바일 웹앱입니다. WBTI(웰니스 유형 검사)를 통해 나만의 웰니스 유형을 알아보고, 감정 기반 추천으로 나에게 맞는 공간을 찾고, 방문 기록을 통해 나의 웰니스 활동을 기록/관리할 수 있습니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+<!-- 공모전명, 제출 정보 등 필요하면 여기 추가 -->
 
-## React Compiler
+<br>
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠 기술 스택
 
-## Expanding the Oxlint configuration
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-v4-38BDF8?logo=tailwindcss&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+| 분야 | 스택 |
+|---|---|
+| Frontend | React, Vite, TypeScript, Tailwind CSS v4, React Router |
+| Backend | Firebase (Authentication, Firestore, Storage, Hosting) |
+| External API | 한국관광공사 공공데이터 API |  
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+<br>
+
+## 📁 폴더 구조
+
+```
+src/
+  pages/          # 화면 단위 컴포넌트 (라우트에 연결)
+    onboarding/
+    map/
+    history/
+    my/
+  components/     # 재사용 UI 컴포넌트
+    layout/
+    onboarding/
+    home/
+    map/
+    history/
+    my/
+    chatbot/
+    shared/
+  firebase/       # Firebase 설정 및 연동 함수
+  hooks/          # 커스텀 훅
+  types/          # TypeScript 타입 정의
+  App.tsx
+  main.tsx
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+<br>
+
+## 🚀 실행 방법
+
+1. 저장소 클론
+   ```bash
+   git clone [저장소 URL]
+   cd solaness
+   ```
+
+2. 패키지 설치
+   ```bash
+   npm install
+   ```
+
+3. 환경변수 설정
+   - 프로젝트 루트에 `.env` 파일 생성
+   - `.env.example` 참고해서 Firebase config 값 채우기 (팀 내부 공유)
+   - `functions/.secret.local.example`을 `functions/.secret.local`로 복사하고 `TOUR_API_SERVICE_KEY` 채우기
+     (지도 검색/상세는 Cloud Functions 프록시를 거치므로 emulator에도 키가 필요함)
+
+4. 개발 서버 실행 (터미널 2개 필요 — 지도 검색/상세는 Functions emulator가 떠 있어야 동작)
+   ```bash
+   npm run emulators   # 터미널 1: Firebase Functions + Firestore emulator (TourAPI 프록시, rate limit 카운터 저장용)
+   npm run dev          # 터미널 2: Vite dev 서버
+   ```
+   → `http://localhost:5173` 접속
+   - `npm run emulators`는 실행 전에 `functions`를 자동으로 빌드하지만, emulator가 떠 있는
+     동안 `functions/src`를 고치면 자동 반영되지 않는다 — 재빌드하려면 emulator를 껐다가
+     `npm run emulators`로 다시 띄우기
+   - TourAPI 프록시의 rate limit 카운터를 Firestore에 저장하므로 Firestore emulator도 함께
+     떠야 한다(`npm run emulators`에 포함되어 있어 따로 띄울 필요는 없음) — 없이 Functions
+     emulator만 띄우면 admin SDK가 프로덕션 Firestore를 바라보게 된다.
+
+### 요구 사항
+- Node.js 18 이상
+- [firebase-tools](https://firebase.google.com/docs/cli) 전역 설치 (`npm install -g firebase-tools`), `firebase login` 완료
+
+<br>
+
+## 🌿 Git 브랜치 전략 / 커밋 컨벤션
+
+[GIT_FLOW.md](./GIT_FLOW.md) 참고
