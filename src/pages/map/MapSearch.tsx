@@ -6,6 +6,7 @@ import PlaceThumbCardSkeleton from "../../components/shared/PlaceThumbCardSkelet
 import CategoryFilterTabs from "../../components/shared/CategoryFilterTabs";
 import SearchBar from "../../components/map/SearchBar";
 import RecentSearchChips from "../../components/map/RecentSearchChips";
+import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
 import { useRecentSearches } from "../../hooks/useRecentSearches";
 import { useUserLocation } from "../../hooks/useUserLocation";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../../constants/categories";
@@ -73,7 +74,13 @@ function MapSearch() {
 
   const handleSelectForRecord = recordDate
     ? (place: Place) => {
+        /*
+         * push가 아니라 replace로 이동한다 — 캘린더에서 이 화면(장소 선택)으로
+         * 넘어올 때는 push했으니, 방문 기록을 저장하고 나서 뒤로가기를 누르면
+         * (이미 다 쓴) 장소 선택 화면이 아니라 캘린더로 곧장 돌아가게 하기 위해서다.
+         */
         navigate("/history/record/new", {
+          replace: true,
           state: {
             place,
             date: recordDate,
@@ -255,7 +262,22 @@ function MapSearch() {
       <BackgroundBlobs />
 
       <header className="relative z-10 px-[19px] pt-6">
-        <h1 className="text-[32px] font-bold text-[#F78903]">Solaness</h1>
+        {recordDate ? (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label="이전 화면으로 이동"
+              className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
+            >
+              <IconChevronLeft />
+            </button>
+
+            <h1 className="text-[32px] font-bold text-[#F78903]">Solaness</h1>
+          </div>
+        ) : (
+          <h1 className="text-[32px] font-bold text-[#F78903]">Solaness</h1>
+        )}
 
         {recordDate && (
           <p className="mt-2 text-sm font-medium text-[#754308]">

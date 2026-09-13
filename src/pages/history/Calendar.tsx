@@ -11,6 +11,7 @@ import HistoryEmptyState from "../../components/history/HistoryEmptyState";
 import MonthlyCalendar from "../../components/history/MonthlyCalendar";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
+import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
 import {
   useAuth,
 } from "../../contexts/AuthContext";
@@ -21,13 +22,15 @@ import type {
   DailyActivity,
 } from "../../data/historyCalendar";
 
-const INITIAL_YEAR = 2026;
-
 /*
- * JavaScript의 월은 0부터 시작합니다.
- * 6은 7월입니다.
+ * 실제 오늘 날짜로 캘린더를 엽니다. 예전엔 목업 데이터(2026년 7월 샘플)에
+ * 맞춰 2026-07로 고정해뒀는데, 그 상태로 실제 기록을 추가하면 "이번 달"
+ * 기준으로 집계하는 기록 메인 화면(HistoryMain)의 통계에는 안 잡히는
+ * 문제가 있었다.
  */
-const INITIAL_MONTH = 6;
+const today = new Date();
+const INITIAL_YEAR = today.getFullYear();
+const INITIAL_MONTH = today.getMonth();
 
 function Calendar() {
   const navigate = useNavigate();
@@ -256,7 +259,16 @@ function Calendar() {
           '"Pretendard Variable", Pretendard, sans-serif',
       }}
     >
-      <header>
+      <header className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="이전 화면으로 이동"
+          className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
+        >
+          <IconChevronLeft />
+        </button>
+
         <h1 className="text-[24px] font-bold text-[#F78903]">
           Solaness
         </h1>
