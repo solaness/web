@@ -90,13 +90,7 @@ function SunshineTimerCard({
           <span>{temperature}°C</span>
         </div>
 
-        <div
-          className="mt-3 flex items-center justify-center gap-2"
-          aria-hidden="true"
-        >
-          <span className="h-[6px] w-[6px] rounded-full bg-[#FFAC27]" />
-          <span className="h-[6px] w-[6px] rounded-full border border-[#FFAC27] bg-white" />
-        </div>
+        
       </div>
     </article>
   );

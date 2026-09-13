@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
   type UIEvent,
@@ -7,6 +8,7 @@ import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
 
 const CARD_COUNT = 2;
+const AUTO_SLIDE_DELAY = 15_000;
 
 function SunshineCardSlider() {
   const sliderRef =
@@ -14,6 +16,47 @@ function SunshineCardSlider() {
 
   const [currentIndex, setCurrentIndex] =
     useState(0);
+
+  const moveToCard = (
+    index: number,
+  ) => {
+    const slider = sliderRef.current;
+
+    if (!slider) {
+      return;
+    }
+
+    slider.scrollTo({
+      left:
+        slider.clientWidth * index,
+      behavior: "smooth",
+    });
+
+    setCurrentIndex(index);
+  };
+
+  /*
+   * 현재 카드가 선택된 후 15초가 지나면
+   * 다음 카드로 자동 이동합니다.
+   *
+   * 두 번째 카드에서는 다시 첫 번째 카드로 돌아갑니다.
+   */
+  useEffect(() => {
+    const timerId = window.setTimeout(
+      () => {
+        const nextIndex =
+          (currentIndex + 1) %
+          CARD_COUNT;
+
+        moveToCard(nextIndex);
+      },
+      AUTO_SLIDE_DELAY,
+    );
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [currentIndex]);
 
   const handleScroll = (
     event: UIEvent<HTMLDivElement>,
@@ -29,27 +72,12 @@ function SunshineCardSlider() {
         slider.clientWidth,
     );
 
-    setCurrentIndex(
-      Math.min(
-        Math.max(index, 0),
-        CARD_COUNT - 1,
-      ),
+    const safeIndex = Math.min(
+      Math.max(index, 0),
+      CARD_COUNT - 1,
     );
-  };
 
-  const moveToCard = (index: number) => {
-    const slider = sliderRef.current;
-
-    if (!slider) {
-      return;
-    }
-
-    slider.scrollTo({
-      left: slider.clientWidth * index,
-      behavior: "smooth",
-    });
-
-    setCurrentIndex(index);
+    setCurrentIndex(safeIndex);
   };
 
   return (
@@ -59,16 +87,16 @@ function SunshineCardSlider() {
     >
       <div
         ref={sliderRef}
-        className="flex w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]"
+       className="relative left-1/2 flex w-[393px] max-w-[100vw] -translate-x-1/2 snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onScroll={handleScroll}
       >
         {/* 첫 번째 카드 */}
-        <div className="w-full shrink-0 snap-center py-[8px]">
+        <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
           <SunshineTimerCard />
         </div>
 
         {/* 두 번째 카드 */}
-        <div className="w-full shrink-0 snap-center py-[8px]">
+        <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
           <SunshineScoreCard />
         </div>
       </div>
