@@ -99,6 +99,14 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
   },
 ];
 
+/**
+ * Firestore 연동 전까지, 새로 기록한 방문을 목업 배열에 추가하는 유일한 창구.
+ * 컴포넌트가 SAMPLE_ACTIVITIES를 직접 push하지 않고 이 함수를 거치게 한다.
+ */
+export function addActivity(activity: DailyActivity): void {
+  SAMPLE_ACTIVITIES.push(activity);
+}
+
 export const SAMPLE_TRAVEL_SCHEDULES: TravelSchedule[] = [
   {
     id: "travel-1",

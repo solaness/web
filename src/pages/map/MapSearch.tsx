@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import PlaceThumbCard from "../../components/shared/PlaceThumbCard";
 import PlaceThumbCardSkeleton from "../../components/shared/PlaceThumbCardSkeleton";
@@ -31,7 +32,23 @@ const CATEGORY_DAILY_PAGE_POOL_SIZE = 5;
 // 정도로만 적당히 잡는다(전체 개수와 맞출 필요 없음).
 const CATEGORY_SKELETON_COUNT = 4;
 
+interface MapSearchLocationState {
+  /** 기록/캘린더에서 넘어온 경우, 방문 기록을 남길 날짜(YYYY-MM-DD). */
+  recordDate?: string;
+}
+
+function formatRecordDateLabel(date: string) {
+  const [, month, day] = date.split("-").map(Number);
+
+  return `${month}월 ${day}일`;
+}
+
 function MapSearch() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const recordDate = (location.state as MapSearchLocationState | null)
+    ?.recordDate;
+
   const [searchInput, setSearchInput] = useState("");
   // "" = 기본 상태, 값이 있으면 검색 후 상태 (스크린샷의 두 화면 상태 전환 기준)
   const [submittedTerm, setSubmittedTerm] = useState("");
@@ -53,6 +70,17 @@ function MapSearch() {
   const [nearbyError, setNearbyError] = useState<string | null>(null);
 
   const isSearching = submittedTerm !== "";
+
+  const handleSelectForRecord = recordDate
+    ? (place: Place) => {
+        navigate("/history/record/new", {
+          state: {
+            place,
+            date: recordDate,
+          },
+        });
+      }
+    : undefined;
 
   const handleSearchSubmit = (term: string) => {
     const trimmed = term.trim();
@@ -229,6 +257,13 @@ function MapSearch() {
       <header className="relative z-10 px-[19px] pt-6">
         <h1 className="text-[32px] font-bold text-[#F78903]">Solaness</h1>
 
+        {recordDate && (
+          <p className="mt-2 text-sm font-medium text-[#754308]">
+            {formatRecordDateLabel(recordDate)} 방문 기록을 남길 장소를
+            선택해주세요
+          </p>
+        )}
+
         <div className="mt-4">
           <SearchBar
             value={searchInput}
@@ -271,7 +306,10 @@ function MapSearch() {
               ) : searchError ? (
                 <p className="text-sm font-bold text-red-500">{searchError}</p>
               ) : matchedPlace ? (
-                <PlaceThumbCard place={matchedPlace} />
+                <PlaceThumbCard
+                  place={matchedPlace}
+                  onClick={handleSelectForRecord}
+                />
               ) : (
                 <p className="text-sm text-[#B3B3B3]">
                   검색 결과가 없어요
@@ -294,7 +332,11 @@ function MapSearch() {
               ) : nearbyPlaces.length > 0 ? (
                 <div className="flex flex-col gap-4">
                   {nearbyPlaces.map((place) => (
-                    <PlaceThumbCard key={place.id} place={place} />
+                    <PlaceThumbCard
+                      key={place.id}
+                      place={place}
+                      onClick={handleSelectForRecord}
+                    />
                   ))}
                 </div>
               ) : (
@@ -320,7 +362,11 @@ function MapSearch() {
             ) : (
               <div className="flex flex-col gap-4">
                 {categoryPlaces.map((place) => (
-                  <PlaceThumbCard key={place.id} place={place} />
+                  <PlaceThumbCard
+                    key={place.id}
+                    place={place}
+                    onClick={handleSelectForRecord}
+                  />
                 ))}
               </div>
             )}
