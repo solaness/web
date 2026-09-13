@@ -23,6 +23,7 @@ import HistoryMain from './pages/history/HistoryMain'
 import Calendar from './pages/history/Calendar'
 import Visits from './pages/history/Visits'
 import VisitDetail from "./pages/history/VisitDetail";
+import VisitRecordForm from "./pages/history/VisitRecordForm";
 
 import MyMain from './pages/my/MyMain'
 import EditProfile from './pages/my/EditProfile'
@@ -151,6 +152,22 @@ function App() {
                   }
                 >
                   <VisitDetail />
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/history/record/new"
+              element={
+                <RequireAuth
+                  allowGuest={false}
+                  guestFallback={
+                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                      <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+                    </div>
+                  }
+                >
+                  <VisitRecordForm />
                 </RequireAuth>
               }
             />

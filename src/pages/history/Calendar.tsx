@@ -205,6 +205,18 @@ function Calendar() {
     navigate("/home");
   };
 
+  const handleAddRecord = () => {
+    if (!selectedDate) {
+      return;
+    }
+
+    navigate("/map", {
+      state: {
+        recordDate: selectedDate,
+      },
+    });
+  };
+
   return (
     <main
       className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[23px] pb-28 pt-5"
@@ -270,6 +282,16 @@ function Calendar() {
             ? "방문기록 보러가기"
             : "햇빛 지수 채우러 가기"}
         </button>
+
+        {selectedDate && (
+          <button
+            type="button"
+            className="mt-2 h-[53px] w-full rounded-[25px] border border-[#FFAC27] bg-[#FFFEF6] text-[16px] font-bold text-[#FFAC27] transition-colors hover:bg-[#FFF3DD] active:bg-[#FFE9C2]"
+            onClick={handleAddRecord}
+          >
+            방문 기록 추가하기
+          </button>
+        )}
       </div>
     </main>
   );
