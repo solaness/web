@@ -7,8 +7,12 @@ export interface DailyActivity {
   category: string;
   sunshineScore: number;
   sunshineMinutes: number;
-   imageUrl?: string;
+  imageUrl?: string;
   visitStatus?: string;
+  visitStartTime?: string;
+  visitEndTime?: string;
+  activityNote?: string;
+  scorePerMinute: number;
 }
 
 export interface TravelSchedule {
@@ -28,6 +32,7 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
     category: "공원",
     sunshineScore: 67,
     sunshineMinutes: 34,
+    scorePerMinute: 3,
     visitStatus: "산책",
     imageUrl:
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80",
@@ -41,20 +46,26 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
     category: "산림",
     sunshineScore: 74,
     sunshineMinutes: 58,
+    scorePerMinute: 3,
     visitStatus: "산림",
     imageUrl:
       "https://images.unsplash.com/photo-1448375240586-88270788b888b?auto=format&fit=crop&w=600&q=80",
   },
   {
     id: "activity-3",
-    date: "2026-07-10",
+    date: "2026-09-10",
     placeId: "place-3",
     placeName: "대흥사",
     address: "전라남도 해남군",
     category: "산림",
-    sunshineScore: 62,
-    sunshineMinutes: 42,
+    sunshineScore: 240,
+    sunshineMinutes: 80,
+    scorePerMinute: 3,
     visitStatus: "산림",
+    visitStartTime: "14:00",
+    visitEndTime: "15:20",
+    activityNote:
+      "대흥사 경내를 천천히 둘러보며 산책했다. 조용한 풍경 속에서 여유롭게 시간을 보냈다.",
     imageUrl:
       "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=600&q=80",
   },
@@ -67,6 +78,7 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
     category: "온천",
     sunshineScore: 55,
     sunshineMinutes: 36,
+    scorePerMinute: 3,
     visitStatus: "산림",
     imageUrl:
       "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
@@ -80,6 +92,7 @@ export const SAMPLE_ACTIVITIES: DailyActivity[] = [
     category: "수목원",
     sunshineScore: 70,
     sunshineMinutes: 47,
+    scorePerMinute: 3,
     visitStatus: "산림",
     imageUrl:
       "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=80",

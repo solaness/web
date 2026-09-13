@@ -22,6 +22,7 @@ import Chatbot from './pages/Chatbot'
 import HistoryMain from './pages/history/HistoryMain'
 import Calendar from './pages/history/Calendar'
 import Visits from './pages/history/Visits'
+import VisitDetail from "./pages/history/VisitDetail";
 
 import MyMain from './pages/my/MyMain'
 import EditProfile from './pages/my/EditProfile'
@@ -91,52 +92,68 @@ function App() {
             <Route path="/map" element={<MapSearch />} />
 
             <Route
-  path="/history"
-  element={
-    <RequireAuth
-      allowGuest={false}
-      guestFallback={
-        <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
-          <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
-        </div>
-      }
-    >
-      <HistoryMain />
-    </RequireAuth>
-  }
-/>
+              path="/history"
+              element={
+                <RequireAuth
+                  allowGuest={false}
+                  guestFallback={
+                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                      <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+                    </div>
+                  }
+                >
+                  <HistoryMain />
+                </RequireAuth>
+              }
+            />
 
-<Route
-  path="/history/calendar"
-  element={
-    <RequireAuth
-      allowGuest={false}
-      guestFallback={
-        <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
-          <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
-        </div>
-      }
-    >
-      <Calendar />
-    </RequireAuth>
-  }
-/>
+            <Route
+              path="/history/calendar"
+              element={
+                <RequireAuth
+                  allowGuest={false}
+                  guestFallback={
+                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                      <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+                    </div>
+                  }
+                >
+                  <Calendar />
+                </RequireAuth>
+              }
+            />
 
-<Route
-  path="/history/visits"
-  element={
-    <RequireAuth
-      allowGuest={false}
-      guestFallback={
-        <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
-          <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
-        </div>
-      }
-    >
-      <Visits />
-    </RequireAuth>
-  }
-/>
+            <Route
+              path="/history/visits"
+              element={
+                <RequireAuth
+                  allowGuest={false}
+                  guestFallback={
+                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                      <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+                    </div>
+                  }
+                >
+                  <Visits />
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/history/visits/:recordId"
+              element={
+                <RequireAuth
+                  allowGuest={false}
+                  guestFallback={
+                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                      <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
+                    </div>
+                  }
+                >
+                  <VisitDetail />
+                </RequireAuth>
+              }
+            />
 
             <Route path="/my" element={<MyMain />} />
             <Route path="/my/edit" element={<EditProfile />} />

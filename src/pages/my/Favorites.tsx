@@ -39,6 +39,7 @@ function toFavoriteActivity(bookmark: BookmarkRecord): DailyActivity {
     category: categoryLabel,
     sunshineScore: getSunScore(bookmark.categories, bookmark.isIndoorExperience),
     sunshineMinutes: 0,
+    scorePerMinute: 0,
     imageUrl: bookmark.thumbnailUrl || undefined,
     visitStatus: categoryLabel,
     date: toDateKey(bookmark.savedAt),

@@ -59,7 +59,7 @@ function Visits() {
   const handleSelectActivity = (
     activity: DailyActivity,
   ) => {
-    navigate(`/map/${activity.placeId}`);
+    navigate(`/history/visits/${activity.id}`);
   };
 
   return (
