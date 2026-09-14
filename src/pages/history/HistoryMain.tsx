@@ -4,7 +4,9 @@ import RecordMiniCalendar from "../../components/history/RecordMiniCalendar";
 import RecordMonthlyPlaces from "../../components/history/RecordMonthlyPlaces";
 import RecordMonthlySummary from "../../components/history/RecordMonthlySummary";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
-import { SAMPLE_ACTIVITIES } from "../../data/historyCalendar";
+import LoadingScreen from "../../components/shared/LoadingScreen";
+import ErrorScreen from "../../components/shared/ErrorScreen";
+import { useVisitRecords } from "../../hooks/useVisitRecords";
 
 const now = new Date();
 const DISPLAY_YEAR = now.getFullYear();
@@ -12,12 +14,13 @@ const DISPLAY_MONTH = now.getMonth();
 
 function HistoryMain() {
   const navigate = useNavigate();
+  const { activities, loadStatus, retry } = useVisitRecords();
 
   const monthPrefix = `${DISPLAY_YEAR}-${String(
     DISPLAY_MONTH + 1,
   ).padStart(2, "0")}`;
 
-  const monthlyActivities = SAMPLE_ACTIVITIES.filter((activity) =>
+  const monthlyActivities = activities.filter((activity) =>
     activity.date.startsWith(monthPrefix),
   );
 
@@ -59,22 +62,35 @@ function HistoryMain() {
         />
       </header>
 
-      <div className="relative z-10 space-y-[12px]">
-        <RecordMiniCalendar
-          year={DISPLAY_YEAR}
-          month={DISPLAY_MONTH}
-          activityDates={activityDates}
-          onOpenCalendar={handleOpenCalendar}
-        />
+      {loadStatus === "loading" && (
+        <LoadingScreen message="방문 기록을 불러오는 중..." />
+      )}
 
-        <RecordMonthlySummary activities={monthlyActivities} />
-
-        <RecordMonthlyPlaces
-          activities={monthlyActivities}
-          onOpenAll={handleOpenVisits}
-          onSelectActivity={handleSelectActivity}
+      {loadStatus === "error" && (
+        <ErrorScreen
+          message="방문 기록을 불러오지 못했어요."
+          onRetry={retry}
         />
-      </div>
+      )}
+
+      {loadStatus === "success" && (
+        <div className="relative z-10 space-y-[12px]">
+          <RecordMiniCalendar
+            year={DISPLAY_YEAR}
+            month={DISPLAY_MONTH}
+            activityDates={activityDates}
+            onOpenCalendar={handleOpenCalendar}
+          />
+
+          <RecordMonthlySummary activities={monthlyActivities} />
+
+          <RecordMonthlyPlaces
+            activities={monthlyActivities}
+            onOpenAll={handleOpenVisits}
+            onSelectActivity={handleSelectActivity}
+          />
+        </div>
+      )}
     </main>
   );
 }

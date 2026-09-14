@@ -1,4 +1,5 @@
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -14,6 +15,7 @@ import { db } from "./config";
 import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiAnswerMap, WbtiTypeId } from "../types/wbti";
 import type { PlaceCategoryCode } from "../types/place";
+import type { DailyActivity } from "../data/historyCalendar";
 
 export interface OnboardingRegionInput {
   provinceCode: string;
@@ -185,4 +187,75 @@ export async function getBookmarks(uid: string): Promise<BookmarkRecord[]> {
       savedAt: data.savedAt instanceof Timestamp ? data.savedAt.toDate() : null,
     };
   });
+}
+
+function visitRecordsCollection(uid: string) {
+  return collection(db, "users", uid, "visitRecords");
+}
+
+function toDailyActivity(id: string, data: Record<string, unknown>): DailyActivity {
+  return {
+    id,
+    date: data.date as string,
+    placeId: data.placeId as string,
+    placeName: data.placeName as string,
+    address: data.address as string,
+    category: data.category as string,
+    sunshineScore: data.sunshineScore as number,
+    sunshineMinutes: data.sunshineMinutes as number,
+    scorePerMinute: data.scorePerMinute as number,
+    imageUrl: data.imageUrl as string | undefined,
+    visitStatus: data.visitStatus as string | undefined,
+    visitStartTime: data.visitStartTime as string | undefined,
+    visitEndTime: data.visitEndTime as string | undefined,
+    activityNote: data.activityNote as string | undefined,
+  };
+}
+
+/**
+ * 기록 - 방문 기록 추가하기(VisitRecordForm)에서 사용. users/{uid}/visitRecords에
+ * 자동 생성 id로 새 문서를 만들고, 생성된 id를 반환한다(상세 화면으로 바로 이동하기 위해).
+ * createdAt은 보안 규칙에서 request.time과 비교해 클라이언트가 임의 값을 못 넣게 막는다.
+ * activityNote 등 선택 필드가 비어 undefined로 넘어오면 Firestore가 필드 값으로
+ * undefined를 거부하므로, 그런 키는 아예 문서에서 뺀다(null이 아니라 "필드 없음"으로 저장됨).
+ */
+export async function addVisitRecord(
+  uid: string,
+  input: Omit<DailyActivity, "id">,
+): Promise<string> {
+  const definedEntries = Object.entries(input).filter(
+    ([, value]) => value !== undefined,
+  );
+
+  const docRef = await addDoc(visitRecordsCollection(uid), {
+    ...Object.fromEntries(definedEntries),
+    createdAt: serverTimestamp(),
+  });
+
+  return docRef.id;
+}
+
+/** 캘린더/기록 메인/이 달의 기록 목록에서 사용. 방문일 최신순으로 전부 가져온 뒤 화면에서 월별로 거른다. */
+export async function getVisitRecords(uid: string): Promise<DailyActivity[]> {
+  const visitRecordsQuery = query(
+    visitRecordsCollection(uid),
+    orderBy("date", "desc"),
+  );
+  const snapshot = await getDocs(visitRecordsQuery);
+
+  return snapshot.docs.map((visitDoc) => toDailyActivity(visitDoc.id, visitDoc.data()));
+}
+
+/** 기록 상세 화면에서 단건 조회. 새로고침해도 전체 목록을 안 거치고 바로 조회할 수 있다. */
+export async function getVisitRecord(
+  uid: string,
+  recordId: string,
+): Promise<DailyActivity | null> {
+  const snapshot = await getDoc(doc(db, "users", uid, "visitRecords", recordId));
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return toDailyActivity(snapshot.id, snapshot.data());
 }

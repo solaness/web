@@ -4,7 +4,9 @@ import {
   useParams,
 } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
-import { SAMPLE_ACTIVITIES } from "../../data/historyCalendar";
+import LoadingScreen from "../../components/shared/LoadingScreen";
+import ErrorScreen from "../../components/shared/ErrorScreen";
+import { useVisitRecord } from "../../hooks/useVisitRecord";
 import sunIcon from "../../assets/images/sun.svg";
 import pencilIcon from "../../assets/images/pencil.svg";
 import calendarIcon from "../../assets/images/calendar.svg";
@@ -57,11 +59,20 @@ function formatDuration(minutes: number) {
 function VisitDetail() {
   const navigate = useNavigate();
   const { recordId } = useParams();
+  const { activity, loadStatus, retry } = useVisitRecord(recordId);
 
-  const activity =
-    SAMPLE_ACTIVITIES.find(
-      (item) => item.id === recordId,
+  if (loadStatus === "loading") {
+    return <LoadingScreen message="방문 기록을 불러오는 중..." />;
+  }
+
+  if (loadStatus === "error") {
+    return (
+      <ErrorScreen
+        message="방문 기록을 불러오지 못했어요."
+        onRetry={retry}
+      />
     );
+  }
 
   if (!recordId || !activity) {
     return (

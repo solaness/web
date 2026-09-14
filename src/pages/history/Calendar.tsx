@@ -8,28 +8,25 @@ import {
 import DailyActivityCard from "../../components/history/DailyActivityCard";
 import HistoryEmptyState from "../../components/history/HistoryEmptyState";
 import MonthlyCalendar from "../../components/history/MonthlyCalendar";
-import {
-  useAuth,
-} from "../../contexts/AuthContext";
-import {
-  SAMPLE_ACTIVITIES,
-} from "../../data/historyCalendar";
-
-const INITIAL_YEAR = 2026;
+import LoadingScreen from "../../components/shared/LoadingScreen";
+import ErrorScreen from "../../components/shared/ErrorScreen";
+import AppTitle from "../../components/shared/AppTitle";
+import { useGoBack } from "../../hooks/useGoBack";
+import { useVisitRecords } from "../../hooks/useVisitRecords";
 
 /*
- * JavaScript의 월은 0부터 시작합니다.
- * 6은 7월입니다.
+ * 실제 오늘 날짜로 캘린더를 엽니다. 예전엔 목업 데이터(2026년 7월 샘플)에
+ * 맞춰 2026-07로 고정해뒀는데, 그 상태로 실제 기록을 추가하면 "이번 달"
+ * 기준으로 집계하는 기록 메인 화면(HistoryMain)의 통계에는 안 잡히는
+ * 문제가 있었다.
  */
-const INITIAL_MONTH = 6;
+const today = new Date();
+const INITIAL_YEAR = today.getFullYear();
+const INITIAL_MONTH = today.getMonth();
 
 function Calendar() {
   const navigate = useNavigate();
-
-  const {
-    user,
-    isGuest,
-  } = useAuth();
+  const goBack = useGoBack("/home");
 
   const [year, setYear] =
     useState(INITIAL_YEAR);
@@ -50,23 +47,11 @@ function Calendar() {
     month + 1,
   ).padStart(2, "0")}`;
 
-  /*
-   * 로그인 사용자는 UI 확인용 샘플 데이터를 사용합니다.
-   * 게스트는 기록이 없는 상태를 표시합니다.
-   *
-   * Firestore 연결 후 SAMPLE_ACTIVITIES를
-   * 실제 조회 결과로 교체하면 됩니다.
-   */
-  const availableActivities = useMemo(
-    () => {
-      if (isGuest || !user) {
-        return [];
-      }
-
-      return SAMPLE_ACTIVITIES;
-    },
-    [isGuest, user],
-  );
+  const {
+    activities: availableActivities,
+    loadStatus,
+    retry,
+  } = useVisitRecords();
 
   /*
    * 현재 화면에 표시된 연도와 월에 해당하는
@@ -196,7 +181,7 @@ function Calendar() {
   const handleBottomButton = () => {
     if (selectedActivity) {
       navigate(
-        `/history/visits?recordId=${selectedActivity.id}`,
+        `/history/visits?recordId=${selectedActivity.id}&year=${year}&month=${month + 1}`,
       );
 
       return;
@@ -225,12 +210,23 @@ function Calendar() {
           '"Pretendard Variable", Pretendard, sans-serif',
       }}
     >
-      <header>
-        <h1 className="text-[24px] font-bold text-[#F78903]">
-          Solaness
-        </h1>
+      <header className="flex items-center gap-1">
+        <AppTitle onBack={goBack} />
       </header>
 
+      {loadStatus === "loading" && (
+        <LoadingScreen message="방문 기록을 불러오는 중..." />
+      )}
+
+      {loadStatus === "error" && (
+        <ErrorScreen
+          message="방문 기록을 불러오지 못했어요."
+          onRetry={retry}
+        />
+      )}
+
+      {loadStatus === "success" && (
+        <>
       <div className="mt-8">
         <MonthlyCalendar
           year={year}
@@ -293,6 +289,8 @@ function Calendar() {
           </button>
         )}
       </div>
+        </>
+      )}
     </main>
   );
 }
