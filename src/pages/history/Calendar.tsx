@@ -12,6 +12,7 @@ import MonthlyCalendar from "../../components/history/MonthlyCalendar";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
 import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
+import { useGoBack } from "../../hooks/useGoBack";
 import {
   useAuth,
 } from "../../contexts/AuthContext";
@@ -34,6 +35,7 @@ const INITIAL_MONTH = today.getMonth();
 
 function Calendar() {
   const navigate = useNavigate();
+  const goBack = useGoBack("/home");
 
   const {
     user,
@@ -230,7 +232,7 @@ function Calendar() {
   const handleBottomButton = () => {
     if (selectedActivity) {
       navigate(
-        `/history/visits?recordId=${selectedActivity.id}`,
+        `/history/visits?recordId=${selectedActivity.id}&year=${year}&month=${month + 1}`,
       );
 
       return;
@@ -262,7 +264,7 @@ function Calendar() {
       <header className="flex items-center gap-1">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           aria-label="이전 화면으로 이동"
           className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
         >

@@ -7,6 +7,7 @@ import CategoryFilterTabs from "../../components/shared/CategoryFilterTabs";
 import SearchBar from "../../components/map/SearchBar";
 import RecentSearchChips from "../../components/map/RecentSearchChips";
 import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
+import { useGoBack } from "../../hooks/useGoBack";
 import { useRecentSearches } from "../../hooks/useRecentSearches";
 import { useUserLocation } from "../../hooks/useUserLocation";
 import { CATEGORIES, DEFAULT_CATEGORY } from "../../constants/categories";
@@ -46,6 +47,7 @@ function formatRecordDateLabel(date: string) {
 
 function MapSearch() {
   const navigate = useNavigate();
+  const goBack = useGoBack("/history/calendar");
   const location = useLocation();
   const recordDate = (location.state as MapSearchLocationState | null)
     ?.recordDate;
@@ -266,7 +268,7 @@ function MapSearch() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               aria-label="이전 화면으로 이동"
               className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
             >

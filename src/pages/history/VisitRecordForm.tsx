@@ -7,6 +7,7 @@ import {
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useGoBack } from "../../hooks/useGoBack";
 import { addVisitRecord } from "../../firebase/firestore";
 import { getSunScore } from "../../constants/sunScore";
 import { CATEGORIES } from "../../constants/categories";
@@ -45,6 +46,7 @@ function minutesBetween(start: string, end: string): number | null {
 
 function VisitRecordForm() {
   const navigate = useNavigate();
+  const goBack = useGoBack("/history/calendar");
   const location = useLocation();
   const { user } = useAuth();
   const userId = user?.uid ?? null;
@@ -129,7 +131,7 @@ function VisitRecordForm() {
       <header className="relative z-10 flex items-center gap-1">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           aria-label="이전 화면으로 이동"
           className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
         >

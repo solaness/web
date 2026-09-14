@@ -71,7 +71,12 @@ service cloud.firestore {
           && request.resource.data.sunshineScore is number
           && request.resource.data.sunshineMinutes is number
           && request.resource.data.scorePerMinute is number
-          && request.resource.data.createdAt == request.time;
+          && request.resource.data.createdAt == request.time
+          && (!('visitStartTime' in request.resource.data) || request.resource.data.visitStartTime is string)
+          && (!('visitEndTime' in request.resource.data) || request.resource.data.visitEndTime is string)
+          && (!('activityNote' in request.resource.data) || request.resource.data.activityNote is string)
+          && (!('imageUrl' in request.resource.data) || request.resource.data.imageUrl is string)
+          && (!('visitStatus' in request.resource.data) || request.resource.data.visitStatus is string);
       }
     }
 
