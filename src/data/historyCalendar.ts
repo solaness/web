@@ -7,8 +7,12 @@ export interface DailyActivity {
   category: string;
   sunshineScore: number;
   sunshineMinutes: number;
-   imageUrl?: string;
+  imageUrl?: string;
   visitStatus?: string;
+  visitStartTime?: string;
+  visitEndTime?: string;
+  activityNote?: string;
+  scorePerMinute: number;
 }
 
 export interface TravelSchedule {
@@ -17,80 +21,3 @@ export interface TravelSchedule {
   startDate: string;
   endDate: string;
 }
-
-export const SAMPLE_ACTIVITIES: DailyActivity[] = [
-  {
-    id: "activity-1",
-    date: "2026-07-01",
-    placeId: "place-1",
-    placeName: "서울숲",
-    address: "서울특별시 성동구",
-    category: "공원",
-    sunshineScore: 67,
-    sunshineMinutes: 34,
-    visitStatus: "산책",
-    imageUrl:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "activity-2",
-    date: "2026-07-09",
-    placeId: "place-2",
-    placeName: "교래자연휴양림",
-    address: "제주특별자치도 제주시",
-    category: "산림",
-    sunshineScore: 74,
-    sunshineMinutes: 58,
-    visitStatus: "산림",
-    imageUrl:
-      "https://images.unsplash.com/photo-1448375240586-88270788b888b?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "activity-3",
-    date: "2026-07-10",
-    placeId: "place-3",
-    placeName: "대흥사",
-    address: "전라남도 해남군",
-    category: "산림",
-    sunshineScore: 62,
-    sunshineMinutes: 42,
-    visitStatus: "산림",
-    imageUrl:
-      "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "activity-4",
-    date: "2026-07-12",
-    placeId: "place-4",
-    placeName: "약석원",
-    address: "인천광역시 강화군",
-    category: "온천",
-    sunshineScore: 55,
-    sunshineMinutes: 36,
-    visitStatus: "산림",
-    imageUrl:
-      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "activity-5",
-    date: "2026-09-15",
-    placeId: "place-5",
-    placeName: "한라수목원",
-    address: "제주특별자치도 제주시",
-    category: "수목원",
-    sunshineScore: 70,
-    sunshineMinutes: 47,
-    visitStatus: "산림",
-    imageUrl:
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=80",
-  },
-];
-
-export const SAMPLE_TRAVEL_SCHEDULES: TravelSchedule[] = [
-  {
-    id: "travel-1",
-    title: "제주 웰니스 여행",
-    startDate: "2026-07-12",
-    endDate: "2026-07-15",
-  },
-];
