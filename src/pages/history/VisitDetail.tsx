@@ -6,7 +6,9 @@ import {
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
+import AppTitle from "../../components/shared/AppTitle";
 import { useVisitRecord } from "../../hooks/useVisitRecord";
+import { useGoBack } from "../../hooks/useGoBack";
 import sunIcon from "../../assets/images/sun.svg";
 import pencilIcon from "../../assets/images/pencil.svg";
 import calendarIcon from "../../assets/images/calendar.svg";
@@ -58,6 +60,7 @@ function formatDuration(minutes: number) {
 
 function VisitDetail() {
   const navigate = useNavigate();
+  const goBack = useGoBack("/history/visits");
   const { recordId } = useParams();
   const { activity, loadStatus, retry } = useVisitRecord(recordId);
 
@@ -98,9 +101,10 @@ function VisitDetail() {
       <BackgroundBlobs />
 
       <header className="relative z-10">
-        <h1 className="text-[24px] font-bold leading-[30px] text-[#F78903]">
-          Solaness
-        </h1>
+        <AppTitle
+          onBack={goBack}
+          titleClassName="text-[24px] font-bold leading-[30px] text-[#F78903]"
+        />
       </header>
 
       <div className="relative z-10 mt-[44px] flex flex-col gap-[11px] ">

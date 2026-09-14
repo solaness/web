@@ -7,11 +7,14 @@ import VisitRecordCard from "../../components/history/VisitRecordCard";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
+import AppTitle from "../../components/shared/AppTitle";
 import { useVisitRecords } from "../../hooks/useVisitRecords";
+import { useGoBack } from "../../hooks/useGoBack";
 import type { DailyActivity } from "../../data/historyCalendar";
 
 function Visits() {
   const navigate = useNavigate();
+  const goBack = useGoBack("/history");
   const [searchParams] = useSearchParams();
 
   const selectedRecordId = searchParams.get("recordId");
@@ -70,10 +73,11 @@ function Visits() {
     >
       <BackgroundBlobs />
 
-      <header className="relative z-10 h-[78px] overflow-hidden">
-        <h1 className="relative z-10 text-[24px] font-bold leading-[30px] text-[#F78903]">
-          Solaness
-        </h1>
+      <header className="relative z-10 flex h-[78px] items-center overflow-hidden">
+        <AppTitle
+          onBack={goBack}
+          titleClassName="text-[24px] font-bold leading-[30px] text-[#F78903]"
+        />
       </header>
 
       <section
