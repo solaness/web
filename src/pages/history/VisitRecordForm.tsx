@@ -5,7 +5,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
-import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
+import AppTitle from "../../components/shared/AppTitle";
 import { useAuth } from "../../contexts/AuthContext";
 import { useGoBack } from "../../hooks/useGoBack";
 import { addVisitRecord } from "../../firebase/firestore";
@@ -129,18 +129,10 @@ function VisitRecordForm() {
       <BackgroundBlobs />
 
       <header className="relative z-10 flex items-center gap-1">
-        <button
-          type="button"
-          onClick={goBack}
-          aria-label="이전 화면으로 이동"
-          className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
-        >
-          <IconChevronLeft />
-        </button>
-
-        <h1 className="text-[24px] font-bold leading-[30px] text-[#F78903]">
-          Solaness
-        </h1>
+        <AppTitle
+          onBack={goBack}
+          titleClassName="text-[24px] font-bold leading-[30px] text-[#F78903]"
+        />
       </header>
 
       <div className="relative z-10 mt-[44px] flex flex-col gap-[11px]">

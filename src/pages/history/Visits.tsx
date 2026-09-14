@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   useNavigate,
   useSearchParams,
@@ -7,15 +7,12 @@ import VisitRecordCard from "../../components/history/VisitRecordCard";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
-import { useAuth } from "../../contexts/AuthContext";
-import { getVisitRecords } from "../../firebase/firestore";
+import { useVisitRecords } from "../../hooks/useVisitRecords";
 import type { DailyActivity } from "../../data/historyCalendar";
 
 function Visits() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isGuest } = useAuth();
-  const userId = user?.uid ?? null;
 
   const selectedRecordId = searchParams.get("recordId");
 
@@ -43,38 +40,7 @@ function Visits() {
     selectedMonth,
   ).padStart(2, "0")}`;
 
-  const [allActivities, setAllActivities] = useState<DailyActivity[]>([]);
-  const [loadStatus, setLoadStatus] = useState<"loading" | "success" | "error">("loading");
-  const [retryToken, setRetryToken] = useState(0);
-
-  useEffect(() => {
-    if (isGuest || !userId) {
-      setAllActivities([]);
-      setLoadStatus("success");
-      return;
-    }
-
-    let cancelled = false;
-    setLoadStatus("loading");
-
-    getVisitRecords(userId)
-      .then((records) => {
-        if (!cancelled) {
-          setAllActivities(records);
-          setLoadStatus("success");
-        }
-      })
-      .catch((error) => {
-        console.error("방문 기록을 불러오지 못했어요:", error);
-        if (!cancelled) {
-          setLoadStatus("error");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isGuest, userId, retryToken]);
+  const { activities: allActivities, loadStatus, retry } = useVisitRecords();
 
   /*
    * getVisitRecords가 이미 방문일(date) 내림차순으로 정렬해 돌려주므로
@@ -121,7 +87,7 @@ function Visits() {
         {loadStatus === "error" && (
           <ErrorScreen
             message="방문 기록을 불러오지 못했어요."
-            onRetry={() => setRetryToken((token) => token + 1)}
+            onRetry={retry}
           />
         )}
 

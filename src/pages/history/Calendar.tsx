@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -11,17 +10,9 @@ import HistoryEmptyState from "../../components/history/HistoryEmptyState";
 import MonthlyCalendar from "../../components/history/MonthlyCalendar";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
-import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
+import AppTitle from "../../components/shared/AppTitle";
 import { useGoBack } from "../../hooks/useGoBack";
-import {
-  useAuth,
-} from "../../contexts/AuthContext";
-import {
-  getVisitRecords,
-} from "../../firebase/firestore";
-import type {
-  DailyActivity,
-} from "../../data/historyCalendar";
+import { useVisitRecords } from "../../hooks/useVisitRecords";
 
 /*
  * 실제 오늘 날짜로 캘린더를 엽니다. 예전엔 목업 데이터(2026년 7월 샘플)에
@@ -36,11 +27,6 @@ const INITIAL_MONTH = today.getMonth();
 function Calendar() {
   const navigate = useNavigate();
   const goBack = useGoBack("/home");
-
-  const {
-    user,
-    isGuest,
-  } = useAuth();
 
   const [year, setYear] =
     useState(INITIAL_YEAR);
@@ -61,48 +47,11 @@ function Calendar() {
     month + 1,
   ).padStart(2, "0")}`;
 
-  const userId = user?.uid ?? null;
-
-  const [availableActivities, setAvailableActivities] =
-    useState<DailyActivity[]>([]);
-
-  const [loadStatus, setLoadStatus] =
-    useState<"loading" | "success" | "error">("loading");
-
-  const [retryToken, setRetryToken] = useState(0);
-
-  /*
-   * 로그인 사용자는 본인의 Firestore 방문 기록을 불러옵니다.
-   * 게스트는 기록이 없는 상태를 표시합니다.
-   */
-  useEffect(() => {
-    if (isGuest || !userId) {
-      setAvailableActivities([]);
-      setLoadStatus("success");
-      return;
-    }
-
-    let cancelled = false;
-    setLoadStatus("loading");
-
-    getVisitRecords(userId)
-      .then((records) => {
-        if (!cancelled) {
-          setAvailableActivities(records);
-          setLoadStatus("success");
-        }
-      })
-      .catch((error) => {
-        console.error("방문 기록을 불러오지 못했어요:", error);
-        if (!cancelled) {
-          setLoadStatus("error");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isGuest, userId, retryToken]);
+  const {
+    activities: availableActivities,
+    loadStatus,
+    retry,
+  } = useVisitRecords();
 
   /*
    * 현재 화면에 표시된 연도와 월에 해당하는
@@ -262,18 +211,7 @@ function Calendar() {
       }}
     >
       <header className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={goBack}
-          aria-label="이전 화면으로 이동"
-          className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
-        >
-          <IconChevronLeft />
-        </button>
-
-        <h1 className="text-[24px] font-bold text-[#F78903]">
-          Solaness
-        </h1>
+        <AppTitle onBack={goBack} />
       </header>
 
       {loadStatus === "loading" && (
@@ -283,7 +221,7 @@ function Calendar() {
       {loadStatus === "error" && (
         <ErrorScreen
           message="방문 기록을 불러오지 못했어요."
-          onRetry={() => setRetryToken((token) => token + 1)}
+          onRetry={retry}
         />
       )}
 

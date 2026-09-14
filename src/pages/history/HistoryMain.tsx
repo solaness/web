@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import solnyangHello from "../../assets/images/solnyang-hello.svg";
 import RecordMiniCalendar from "../../components/history/RecordMiniCalendar";
@@ -7,9 +6,7 @@ import RecordMonthlySummary from "../../components/history/RecordMonthlySummary"
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
-import { useAuth } from "../../contexts/AuthContext";
-import { getVisitRecords } from "../../firebase/firestore";
-import type { DailyActivity } from "../../data/historyCalendar";
+import { useVisitRecords } from "../../hooks/useVisitRecords";
 
 const now = new Date();
 const DISPLAY_YEAR = now.getFullYear();
@@ -17,45 +14,11 @@ const DISPLAY_MONTH = now.getMonth();
 
 function HistoryMain() {
   const navigate = useNavigate();
-  const { user, isGuest } = useAuth();
-  const userId = user?.uid ?? null;
-
-  const [activities, setActivities] = useState<DailyActivity[]>([]);
-  const [loadStatus, setLoadStatus] = useState<"loading" | "success" | "error">("loading");
-  const [retryToken, setRetryToken] = useState(0);
+  const { activities, loadStatus, retry } = useVisitRecords();
 
   const monthPrefix = `${DISPLAY_YEAR}-${String(
     DISPLAY_MONTH + 1,
   ).padStart(2, "0")}`;
-
-  useEffect(() => {
-    if (isGuest || !userId) {
-      setActivities([]);
-      setLoadStatus("success");
-      return;
-    }
-
-    let cancelled = false;
-    setLoadStatus("loading");
-
-    getVisitRecords(userId)
-      .then((records) => {
-        if (!cancelled) {
-          setActivities(records);
-          setLoadStatus("success");
-        }
-      })
-      .catch((error) => {
-        console.error("방문 기록을 불러오지 못했어요:", error);
-        if (!cancelled) {
-          setLoadStatus("error");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isGuest, userId, retryToken]);
 
   const monthlyActivities = activities.filter((activity) =>
     activity.date.startsWith(monthPrefix),
@@ -106,7 +69,7 @@ function HistoryMain() {
       {loadStatus === "error" && (
         <ErrorScreen
           message="방문 기록을 불러오지 못했어요."
-          onRetry={() => setRetryToken((token) => token + 1)}
+          onRetry={retry}
         />
       )}
 

@@ -6,7 +6,7 @@ import PlaceThumbCardSkeleton from "../../components/shared/PlaceThumbCardSkelet
 import CategoryFilterTabs from "../../components/shared/CategoryFilterTabs";
 import SearchBar from "../../components/map/SearchBar";
 import RecentSearchChips from "../../components/map/RecentSearchChips";
-import IconChevronLeft from "../../assets/icons/icon-chevron-left.svg?react";
+import AppTitle from "../../components/shared/AppTitle";
 import { useGoBack } from "../../hooks/useGoBack";
 import { useRecentSearches } from "../../hooks/useRecentSearches";
 import { useUserLocation } from "../../hooks/useUserLocation";
@@ -264,22 +264,10 @@ function MapSearch() {
       <BackgroundBlobs />
 
       <header className="relative z-10 px-[19px] pt-6">
-        {recordDate ? (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={goBack}
-              aria-label="이전 화면으로 이동"
-              className="flex h-8 w-8 shrink-0 items-center justify-center text-[#F78903]"
-            >
-              <IconChevronLeft />
-            </button>
-
-            <h1 className="text-[32px] font-bold text-[#F78903]">Solaness</h1>
-          </div>
-        ) : (
-          <h1 className="text-[32px] font-bold text-[#F78903]">Solaness</h1>
-        )}
+        <AppTitle
+          onBack={recordDate ? goBack : undefined}
+          titleClassName="text-[32px] font-bold text-[#F78903]"
+        />
 
         {recordDate && (
           <p className="mt-2 text-sm font-medium text-[#754308]">
