@@ -1,3 +1,5 @@
+import { formatDateKey } from "../../utils/date";
+
 interface RecordMiniCalendarProps {
   year: number;
   month: number;
@@ -6,18 +8,6 @@ interface RecordMiniCalendarProps {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-
-function formatDateKey(
-  year: number,
-  month: number,
-  day: number,
-) {
-  return [
-    year,
-    String(month + 1).padStart(2, "0"),
-    String(day).padStart(2, "0"),
-  ].join("-");
-}
 
 function RecordMiniCalendar({
   year,
@@ -86,7 +76,7 @@ function RecordMiniCalendar({
             );
           }
 
-          const dateKey = formatDateKey(year, month, day);
+          const dateKey = formatDateKey(new Date(year, month, day));
           const hasActivity = activityDateSet.has(dateKey);
 
           return (

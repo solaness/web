@@ -1,13 +1,14 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type UIEvent,
 } from "react";
 import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
-import { useVisitRecords } from "../../hooks/useVisitRecords";
-import { getTodayDateKey } from "../../utils/date";
+import { useTodayVisitRecords } from "../../hooks/useTodayVisitRecords";
+import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
 
 const CARD_COUNT = 2;
 const AUTO_SLIDE_DELAY = 15_000;
@@ -19,16 +20,29 @@ function SunshineCardSlider() {
   const [currentIndex, setCurrentIndex] =
     useState(0);
 
-  const { activities, loadStatus } = useVisitRecords();
+  const { activities, loadStatus } = useTodayVisitRecords();
 
-  const todayKey = getTodayDateKey();
+  const { todayScore, remainingMinutes } = useMemo(() => {
+    if (loadStatus !== "success") {
+      return { todayScore: null, remainingMinutes: null };
+    }
 
-  const todayScore =
-    loadStatus === "success"
-      ? activities
-          .filter((activity) => activity.date === todayKey)
-          .reduce((sum, activity) => sum + activity.sunshineScore, 0)
-      : null;
+    const todayTotals = activities.reduce(
+      (totals, activity) => ({
+        score: totals.score + activity.sunshineScore,
+        minutes: totals.minutes + activity.sunshineMinutes,
+      }),
+      { score: 0, minutes: 0 },
+    );
+
+    return {
+      todayScore: todayTotals.score,
+      remainingMinutes: Math.max(
+        RECOMMENDED_SUNSHINE_MINUTES - todayTotals.minutes,
+        0,
+      ),
+    };
+  }, [activities, loadStatus]);
 
   const moveToCard = (
     index: number,
@@ -105,7 +119,7 @@ function SunshineCardSlider() {
       >
         {/* 첫 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineTimerCard />
+          <SunshineTimerCard remainingMinutes={remainingMinutes} />
         </div>
 
         {/* 두 번째 카드 */}
