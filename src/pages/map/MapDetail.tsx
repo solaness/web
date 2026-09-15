@@ -212,7 +212,7 @@ function MapDetail() {
 
   if (status === "loading") {
     return (
-      <main className="mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col bg-[#FFFDF6]">
+      <main className="mx-auto flex h-[100dvh] w-full max-w-md flex-col bg-[#FFFDF6]">
         <LoadingScreen message="장소 정보를 불러오는 중..." />
       </main>
     );
@@ -220,7 +220,7 @@ function MapDetail() {
 
   if (status === "error" || !place) {
     return (
-      <main className="mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col bg-[#FFFDF6]">
+      <main className="mx-auto flex h-[100dvh] w-full max-w-md flex-col bg-[#FFFDF6]">
         <ErrorScreen
           message="장소 정보를 불러오지 못했어요."
           onRetry={() => setRetryToken((token) => token + 1)}
@@ -233,7 +233,7 @@ function MapDetail() {
   const directionsUrl = buildDirectionsUrl(place);
 
   return (
-    <main className="relative mx-auto h-[100dvh] min-h-[600px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6]">
+    <main className="relative mx-auto h-[100dvh] w-full max-w-md overflow-hidden bg-[#FFFDF6]">
       <DetailHeroImage imageUrl={place.thumbnailUrl} placeName={place.name} />
 
       {/*

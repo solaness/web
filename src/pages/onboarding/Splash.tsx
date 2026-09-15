@@ -26,7 +26,7 @@ function Splash() {
   }
 
   return (
-    <main className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col items-center justify-center bg-[#FFFDF6]">
+    <main className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center bg-[#FFFDF6]">
       <BackgroundBlobs />
 
       <div className="relative z-10 flex flex-col items-center gap-2">

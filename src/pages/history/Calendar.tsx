@@ -204,7 +204,7 @@ function Calendar() {
 
   return (
     <main
-      className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[23px] pb-28 pt-5"
+      className="mx-auto min-h-screen w-full max-w-md bg-[#FFFDF6] px-[23px] pb-28 pt-5"
       style={{
         fontFamily:
           '"Pretendard Variable", Pretendard, sans-serif',
