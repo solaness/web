@@ -7,7 +7,7 @@ function EditAvatar() {
 
   return (
     <main
-      className="relative mx-auto min-h-[852px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[19px] pb-28 pt-6"
+      className="relative mx-auto min-h-[852px] w-full max-w-md overflow-hidden bg-[#FFFDF6] px-[19px] pb-28 pt-6"
       style={{
         fontFamily:
           '"Pretendard Variable", Pretendard, sans-serif',

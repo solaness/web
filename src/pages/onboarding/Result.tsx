@@ -81,7 +81,7 @@ function Result() {
 
   return (
     <main
-      className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col items-center justify-center overflow-hidden bg-[#FFFDF6] px-[19px]"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center overflow-hidden bg-[#FFFDF6] px-[19px]"
       style={{
         fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}

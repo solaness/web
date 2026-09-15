@@ -204,7 +204,7 @@ function VisitRecordSwipeRow({
 
   return (
     <div
-      className="relative w-full max-w-[345px] rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F78903]"
+      className="relative mx-auto w-full max-w-[345px] rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F78903]"
       role="group"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}

@@ -131,7 +131,7 @@ function Favorites() {
 
   return (
     <main
-      className="relative mx-auto min-h-[852px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[24px] pb-28 pt-5"
+      className="relative mx-auto min-h-[852px] w-full max-w-md overflow-hidden bg-[#FFFDF6] px-[24px] pb-28 pt-5"
       style={{
         fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}

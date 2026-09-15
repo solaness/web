@@ -42,7 +42,7 @@ function HistoryMain() {
 
   return (
     <main
-      className="relative mx-auto min-h-[1061px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[27px] pb-28 pt-5"
+      className="relative mx-auto min-h-[1061px] w-full max-w-md overflow-hidden bg-[#FFFDF6] px-[27px] pb-28 pt-5"
       style={{
         fontFamily:
           '"Pretendard Variable", Pretendard, sans-serif',
