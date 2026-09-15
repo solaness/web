@@ -139,7 +139,7 @@ function SunshineCardSlider() {
             <button
               key={index}
               type="button"
-              className={`h-[9px] w-[9px] rounded-full transition-colors ${
+              className={`h-[9px] w-[9px] rounded-full outline-none transition-colors ${
                 isActive
                   ? "bg-[#FFAC27]"
                   : "border border-[#FFAC27] bg-white"
