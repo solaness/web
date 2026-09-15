@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import RecommendList from "../components/home/RecommendList";
+import RecommendListSkeleton from "../components/home/RecommendListSkeleton";
 import SunshineCardSlider from "../components/home/SunshineCardSlider";
 import BackgroundBlobs from "../components/shared/BackgroundBlobs";
-import LoadingScreen from "../components/shared/LoadingScreen";
 import ErrorScreen from "../components/shared/ErrorScreen";
 import { areaBasedList } from "../api/tourApi";
 import { toTourApiAreaCode } from "../constants/tourApiAreaCodes";
@@ -66,9 +66,7 @@ function Home() {
 
       <SunshineCardSlider />
 
-      {status === "loading" && (
-        <LoadingScreen message="추천 장소를 불러오는 중..." />
-      )}
+      {status === "loading" && <RecommendListSkeleton />}
 
       {status === "error" && (
         <ErrorScreen
