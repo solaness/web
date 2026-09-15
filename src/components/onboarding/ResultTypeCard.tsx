@@ -1,4 +1,4 @@
-import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.png";
+import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.svg";
 import type { WbtiTypeInfo } from "../../types/wbti";
 import { WBTI_RESULT_TAGLINE } from "../../data/wbtiTypes";
 
