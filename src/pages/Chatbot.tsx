@@ -330,8 +330,6 @@ function Chatbot() {
   const lastRound = rounds.at(-1);
   const isFinished = lastRound?.batches.at(-1)?.restartId === "end";
 
-  // 메시지 리스트 컨테이너 자체의 scrollTop만 옮긴다 — scrollIntoView는 상위(window 등)까지
-  // 함께 스크롤시켜 채팅 영역 밖(헤더 등)까지 밀려 올라가는 문제가 있었다.
   useEffect(() => {
     const container = messagesContainerRef.current;
     container?.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
