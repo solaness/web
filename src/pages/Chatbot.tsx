@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { areaBasedList } from "../api/tourApi";
 import IconChevronLeft from "../assets/icons/icon-chevron-left.svg?react";
 import IconPin from "../assets/icons/icon-pin.svg?react";
-import solnyangHelloSun from "../assets/images/solnyang-hello-sun.png";
+import solnyangHelloSun from "../assets/images/solnyang-hello-sun.svg";
 import solnyangProfile from "../assets/images/solnyang-profile.svg";
 import BackgroundBlobs from "../components/shared/BackgroundBlobs";
 import { CHATBOT_MOODS } from "../data/chatbotMoods";
