@@ -95,7 +95,7 @@ function FavoriteTicketRow({
   const isRevealed = offset !== 0;
 
   return (
-    <div className="relative w-full max-w-[345px]">
+    <div className="relative mx-auto w-full max-w-[345px]">
       {/* 삭제 버튼은 자기 자신의 60px 폭 안에서만 클리핑한다 — 티켓 전체를 감싸는
           컨테이너에 overflow-hidden을 걸면 스와이프로 카드가 왼쪽으로 밀릴 때
           왼쪽 내용(핀 아이콘 등)까지 잘려나가 버리기 때문. */}

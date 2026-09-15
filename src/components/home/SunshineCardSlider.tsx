@@ -9,7 +9,6 @@ import SunshineCardSkeleton from "./SunshineCardSkeleton";
 import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
 import { useTodayVisitRecords } from "../../hooks/useTodayVisitRecords";
-import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
 
 const CARD_COUNT = 2;
 const AUTO_SLIDE_DELAY = 15_000;
@@ -24,9 +23,9 @@ function SunshineCardSlider() {
   const { activities, loadStatus } = useTodayVisitRecords();
   const isLoading = loadStatus === "loading";
 
-  const { todayScore, remainingMinutes } = useMemo(() => {
+  const { todayScore, todayMinutes } = useMemo(() => {
     if (loadStatus !== "success") {
-      return { todayScore: null, remainingMinutes: null };
+      return { todayScore: null, todayMinutes: null };
     }
 
     const todayTotals = activities.reduce(
@@ -39,10 +38,7 @@ function SunshineCardSlider() {
 
     return {
       todayScore: todayTotals.score,
-      remainingMinutes: Math.max(
-        RECOMMENDED_SUNSHINE_MINUTES - todayTotals.minutes,
-        0,
-      ),
+      todayMinutes: todayTotals.minutes,
     };
   }, [activities, loadStatus]);
 
@@ -124,7 +120,7 @@ function SunshineCardSlider() {
           {isLoading ? (
             <SunshineCardSkeleton />
           ) : (
-            <SunshineTimerCard remainingMinutes={remainingMinutes} />
+            <SunshineTimerCard todayMinutes={todayMinutes} />
           )}
         </div>
 
@@ -153,7 +149,7 @@ function SunshineCardSlider() {
             <button
               key={index}
               type="button"
-              className={`h-[9px] w-[9px] rounded-full transition-colors ${
+              className={`h-[9px] w-[9px] rounded-full outline-none transition-colors ${
                 isActive
                   ? "bg-[#FFAC27]"
                   : "border border-[#FFAC27] bg-white"

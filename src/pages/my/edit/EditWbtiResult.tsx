@@ -35,7 +35,7 @@ function EditWbtiResult() {
 
   if (isGuest) {
     return (
-      <main className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]">
+      <main className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-[#FFFDF6]">
         <GuestNotice message="WBTI 재검사는 로그인 후 이용할 수 있어요" />
       </main>
     );
@@ -72,7 +72,7 @@ function EditWbtiResult() {
 
   return (
     <main
-      className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col items-center justify-center overflow-hidden bg-[#FFFDF6] px-[19px]"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center overflow-hidden bg-[#FFFDF6] px-[19px]"
       style={{
         fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}
