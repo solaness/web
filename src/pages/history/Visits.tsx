@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import VisitRecordCard from "../../components/history/VisitRecordCard";
+import VisitRecordSwipeRow from "../../components/history/VisitRecordSwipeRow";
+import ConfirmModal from "../../components/shared/ConfirmModal";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
@@ -12,12 +18,33 @@ import { useVisitRecords } from "../../hooks/useVisitRecords";
 import { useGoBack } from "../../hooks/useGoBack";
 import type { DailyActivity } from "../../data/historyCalendar";
 
+const TOAST_DURATION_MS = 2000;
+
+interface ToastState {
+  message: string;
+  variant: "success" | "error";
+}
+
 function Visits() {
   const navigate = useNavigate();
   const goBack = useGoBack("/history");
   const [searchParams] = useSearchParams();
 
   const selectedRecordId = searchParams.get("recordId");
+
+  const [openRecordId, setOpenRecordId] =
+  useState<string | null>(null);
+
+  const [pendingDelete, setPendingDelete] =
+    useState<DailyActivity | null>(null);
+
+  const [toast, setToast] =
+    useState<ToastState | null>(null);
+
+  const toastTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null,
+    );
 
   const today = new Date();
 
@@ -43,7 +70,7 @@ function Visits() {
     selectedMonth,
   ).padStart(2, "0")}`;
 
-  const { activities: allActivities, loadStatus, retry } = useVisitRecords();
+  const { activities: allActivities, loadStatus, retry,  removeRecord, } = useVisitRecords();
 
   /*
    * getVisitRecords가 이미 방문일(date) 내림차순으로 정렬해 돌려주므로
@@ -61,6 +88,63 @@ function Visits() {
     activity: DailyActivity,
   ) => {
     navigate(`/history/visits/${activity.id}`);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = (nextToast: ToastState) => {
+    setToast(nextToast);
+
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, TOAST_DURATION_MS);
+  };
+
+  const handleRequestDelete = (
+    activity: DailyActivity,
+  ) => {
+    setOpenRecordId(null);
+    setPendingDelete(activity);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) {
+      return;
+    }
+
+    const target = pendingDelete;
+
+    setPendingDelete(null);
+    setOpenRecordId(null);
+
+    try {
+      await removeRecord(target.id);
+
+      showToast({
+        message: "방문 기록을 삭제했어요",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error(
+        "방문 기록 삭제에 실패했어요:",
+        error,
+      );
+
+      showToast({
+        message: "삭제에 실패했어요",
+        variant: "error",
+      });
+    }
   };
 
   return (
@@ -99,13 +183,22 @@ function Visits() {
           (activities.length > 0 ? (
             <div className="flex flex-col gap-[12px]">
               {activities.map((activity) => (
-                <VisitRecordCard
+                <VisitRecordSwipeRow
                   key={activity.id}
                   activity={activity}
+                  isOpen={openRecordId === activity.id}
                   isSelected={
                     selectedRecordId === activity.id
                   }
-                  onClick={handleSelectActivity}
+                  onOpenChange={(open) =>
+                    setOpenRecordId(
+                      open ? activity.id : null,
+                    )
+                  }
+                  onSelect={handleSelectActivity}
+                  onRequestDelete={
+                    handleRequestDelete
+                  }
                 />
               ))}
             </div>
@@ -122,6 +215,35 @@ function Visits() {
             </div>
           ))}
       </section>
+      {pendingDelete && (
+        <ConfirmModal
+          title="방문 기록을 삭제할까요?"
+          description="삭제된 기록은 복구할 수 없어요"
+          primaryLabel="삭제하기"
+          onPrimary={handleConfirmDelete}
+          secondaryLabel="취소"
+          onSecondary={() =>
+            setPendingDelete(null)
+          }
+        />
+      )}
+
+      {toast && (
+        <div className="fixed inset-x-0 bottom-[100px] z-50 flex justify-center px-6">
+          <div
+            role="status"
+            className={`flex h-[58px] w-full max-w-[345px] items-center justify-center rounded-[25px] shadow-[4px_4px_4px_0_rgba(138,62,15,0.25)] ${
+              toast.variant === "success"
+                ? "bg-[#FD9419]"
+                : "bg-[#FF544E]"
+            }`}
+          >
+            <p className="text-[20px] font-bold text-white">
+              {toast.message}
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

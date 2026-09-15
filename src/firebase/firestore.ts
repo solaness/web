@@ -259,3 +259,13 @@ export async function getVisitRecord(
 
   return toDailyActivity(snapshot.id, snapshot.data());
 }
+
+/** 방문 기록 삭제*/
+export async function removeVisitRecord(
+  uid: string,
+  recordId: string,
+): Promise<void> {
+  await deleteDoc(
+    doc(db, "users", uid, "visitRecords", recordId),
+  );
+}
