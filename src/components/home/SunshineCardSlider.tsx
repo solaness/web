@@ -5,6 +5,7 @@ import {
   useState,
   type UIEvent,
 } from "react";
+import SunshineCardSkeleton from "./SunshineCardSkeleton";
 import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
 import { useTodayVisitRecords } from "../../hooks/useTodayVisitRecords";
@@ -21,6 +22,7 @@ function SunshineCardSlider() {
     useState(0);
 
   const { activities, loadStatus } = useTodayVisitRecords();
+  const isLoading = loadStatus === "loading";
 
   const { todayScore, remainingMinutes } = useMemo(() => {
     if (loadStatus !== "success") {
@@ -119,12 +121,20 @@ function SunshineCardSlider() {
       >
         {/* 첫 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineTimerCard remainingMinutes={remainingMinutes} />
+          {isLoading ? (
+            <SunshineCardSkeleton />
+          ) : (
+            <SunshineTimerCard remainingMinutes={remainingMinutes} />
+          )}
         </div>
 
         {/* 두 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineScoreCard score={todayScore} />
+          {isLoading ? (
+            <SunshineCardSkeleton />
+          ) : (
+            <SunshineScoreCard score={todayScore} />
+          )}
         </div>
       </div>
 
