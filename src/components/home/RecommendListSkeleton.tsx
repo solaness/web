@@ -2,7 +2,6 @@ import HomePlaceThumbCardSkeleton from "../shared/HomePlaceThumbCardSkeleton";
 
 const SKELETON_COUNT = 4;
 
-/** RecommendList와 같은 헤더/가로 스크롤 레이아웃을 유지한 채, 카드 자리에 스켈레톤을 채운다. */
 function RecommendListSkeleton() {
   return (
     <section className="mt-7" aria-hidden="true">
