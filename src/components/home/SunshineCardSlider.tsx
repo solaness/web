@@ -6,6 +6,8 @@ import {
 } from "react";
 import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
+import { useVisitRecords } from "../../hooks/useVisitRecords";
+import { getTodayDateKey } from "../../utils/date";
 
 const CARD_COUNT = 2;
 const AUTO_SLIDE_DELAY = 15_000;
@@ -16,6 +18,14 @@ function SunshineCardSlider() {
 
   const [currentIndex, setCurrentIndex] =
     useState(0);
+
+  const { activities } = useVisitRecords();
+
+  const todayKey = getTodayDateKey();
+
+  const todayScore = activities
+    .filter((activity) => activity.date === todayKey)
+    .reduce((sum, activity) => sum + activity.sunshineScore, 0);
 
   const moveToCard = (
     index: number,
@@ -97,7 +107,7 @@ function SunshineCardSlider() {
 
         {/* 두 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineScoreCard />
+          <SunshineScoreCard score={todayScore} />
         </div>
       </div>
 

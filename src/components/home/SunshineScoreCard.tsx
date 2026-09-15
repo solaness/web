@@ -3,10 +3,15 @@ interface SunshineScoreCardProps {
   message?: string;
 }
 
+const DEFAULT_MESSAGE = "오늘도 햇빛 에너지를 충전했어요!";
+const EMPTY_MESSAGE = "오늘은 아직 햇빛을 충전하지 않았어요!";
+
 function SunshineScoreCard({
-  score = 78,
-  message = "오늘도 햇빛 에너지를 충전했어요!",
+  score = 0,
+  message,
 }: SunshineScoreCardProps) {
+  const resolvedMessage =
+    message ?? (score > 0 ? DEFAULT_MESSAGE : EMPTY_MESSAGE);
   return (
     <article
       className="mx-auto flex h-[383px] w-full max-w-[370px] flex-col rounded-[8px] border border-[#FFF1D6] bg-white px-4 pb-4 pt-4"
@@ -51,7 +56,7 @@ function SunshineScoreCard({
         </div>
 
         <p className="mt-5 text-center text-[16px] font-semibold leading-[22px] text-[#754308]">
-          {message}
+          {resolvedMessage}
         </p>
       </div>
     </article>
