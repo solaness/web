@@ -4,7 +4,8 @@ import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
 
 interface SunshineTimerCardProps {
   recommendedMinutes?: number;
-  remainingMinutes?: number;
+  /** 오늘 남은 충전 시간. 아직 안 불러온 상태면 null — "다 채웠다"고 잘못 단정하지 않기 위해 구분한다. */
+  remainingMinutes?: number | null;
   uvIndex?: number;
   temperature?: number;
 }
@@ -15,12 +16,14 @@ function SunshineTimerCard({
   uvIndex = 3,
   temperature = 24,
 }: SunshineTimerCardProps) {
+  const isReady = remainingMinutes !== null;
+  const displayRemainingMinutes = remainingMinutes ?? recommendedMinutes;
+
   const safeRecommendedMinutes = Math.max(recommendedMinutes, 1);
 
-  const remainingProgress = Math.min(
-    Math.max(remainingMinutes / safeRecommendedMinutes, 0),
-    1,
-  );
+  const remainingProgress = isReady
+    ? Math.min(Math.max(displayRemainingMinutes / safeRecommendedMinutes, 0), 1)
+    : 0;
 
   const circleRadius = 79;
   const circleLength = 2 * Math.PI * circleRadius;
@@ -45,7 +48,7 @@ function SunshineTimerCard({
           aria-label="남은 햇빛 충전 시간"
           aria-valuemin={0}
           aria-valuemax={safeRecommendedMinutes}
-          aria-valuenow={remainingMinutes}
+          aria-valuenow={isReady ? displayRemainingMinutes : undefined}
         >
           <svg
             viewBox="0 0 181.555 181.555"
@@ -79,11 +82,12 @@ function SunshineTimerCard({
           </svg>
 
           <strong
-  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[64px] font-bold leading-[22px] tracking-[-3px] text-[#FD9D2D]"
-  
->
-  {remainingMinutes}
-</strong>
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[64px] font-bold leading-[22px] tracking-[-3px] text-[#FD9D2D] ${
+              isReady ? "" : "opacity-40"
+            }`}
+          >
+            {isReady ? displayRemainingMinutes : "–"}
+          </strong>
         </div>
 
         <div className="mt-3 flex items-center justify-center gap-2 text-[19px] font-bold leading-[22px] text-[#754308]">

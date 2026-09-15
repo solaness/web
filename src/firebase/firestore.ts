@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
+  where,
 } from "firebase/firestore";
 import { db } from "./config";
 import { isWbtiTypeId } from "../data/wbtiTypes";
@@ -193,6 +194,11 @@ function visitRecordsCollection(uid: string) {
   return collection(db, "users", uid, "visitRecords");
 }
 
+/** 숫자 필드가 없거나(오래된/수동 편집된 문서) 잘못된 타입이면 0으로 취급해, 합계 계산에서 NaN이 퍼지는 걸 막는다. */
+function toSafeNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 function toDailyActivity(id: string, data: Record<string, unknown>): DailyActivity {
   return {
     id,
@@ -201,9 +207,9 @@ function toDailyActivity(id: string, data: Record<string, unknown>): DailyActivi
     placeName: data.placeName as string,
     address: data.address as string,
     category: data.category as string,
-    sunshineScore: data.sunshineScore as number,
-    sunshineMinutes: data.sunshineMinutes as number,
-    scorePerMinute: data.scorePerMinute as number,
+    sunshineScore: toSafeNumber(data.sunshineScore),
+    sunshineMinutes: toSafeNumber(data.sunshineMinutes),
+    scorePerMinute: toSafeNumber(data.scorePerMinute),
     imageUrl: data.imageUrl as string | undefined,
     visitStatus: data.visitStatus as string | undefined,
     visitStartTime: data.visitStartTime as string | undefined,
@@ -240,6 +246,23 @@ export async function getVisitRecords(uid: string): Promise<DailyActivity[]> {
   const visitRecordsQuery = query(
     visitRecordsCollection(uid),
     orderBy("date", "desc"),
+  );
+  const snapshot = await getDocs(visitRecordsQuery);
+
+  return snapshot.docs.map((visitDoc) => toDailyActivity(visitDoc.id, visitDoc.data()));
+}
+
+/**
+ * 홈의 오늘의 햇빛 점수/권장 충전 시간 카드에서 사용. 특정 날짜(date === dateKey)의
+ * 기록만 가져와서, 전체 방문 기록을 다 읽는 getVisitRecords보다 훨씬 가볍다.
+ */
+export async function getVisitRecordsByDate(
+  uid: string,
+  dateKey: string,
+): Promise<DailyActivity[]> {
+  const visitRecordsQuery = query(
+    visitRecordsCollection(uid),
+    where("date", "==", dateKey),
   );
   const snapshot = await getDocs(visitRecordsQuery);
 

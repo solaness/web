@@ -1,13 +1,13 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type UIEvent,
 } from "react";
 import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
-import { useVisitRecords } from "../../hooks/useVisitRecords";
-import { getTodayDateKey } from "../../utils/date";
+import { useTodayVisitRecords } from "../../hooks/useTodayVisitRecords";
 import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
 
 const CARD_COUNT = 2;
@@ -20,18 +20,20 @@ function SunshineCardSlider() {
   const [currentIndex, setCurrentIndex] =
     useState(0);
 
-  const { activities } = useVisitRecords();
+  const { activities, loadStatus } = useTodayVisitRecords();
 
-  const todayKey = getTodayDateKey();
+  const remainingMinutes = useMemo(() => {
+    if (loadStatus !== "success") {
+      return null;
+    }
 
-  const todayMinutes = activities
-    .filter((activity) => activity.date === todayKey)
-    .reduce((sum, activity) => sum + activity.sunshineMinutes, 0);
+    const todayMinutes = activities.reduce(
+      (sum, activity) => sum + activity.sunshineMinutes,
+      0,
+    );
 
-  const remainingMinutes = Math.max(
-    RECOMMENDED_SUNSHINE_MINUTES - todayMinutes,
-    0,
-  );
+    return Math.max(RECOMMENDED_SUNSHINE_MINUTES - todayMinutes, 0);
+  }, [activities, loadStatus]);
 
   const moveToCard = (
     index: number,
