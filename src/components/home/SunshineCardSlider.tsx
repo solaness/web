@@ -19,13 +19,16 @@ function SunshineCardSlider() {
   const [currentIndex, setCurrentIndex] =
     useState(0);
 
-  const { activities } = useVisitRecords();
+  const { activities, loadStatus } = useVisitRecords();
 
   const todayKey = getTodayDateKey();
 
-  const todayScore = activities
-    .filter((activity) => activity.date === todayKey)
-    .reduce((sum, activity) => sum + activity.sunshineScore, 0);
+  const todayScore =
+    loadStatus === "success"
+      ? activities
+          .filter((activity) => activity.date === todayKey)
+          .reduce((sum, activity) => sum + activity.sunshineScore, 0)
+      : null;
 
   const moveToCard = (
     index: number,

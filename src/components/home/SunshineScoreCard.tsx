@@ -1,5 +1,6 @@
 interface SunshineScoreCardProps {
-  score?: number;
+  /** 오늘의 햇빛 점수. 아직 안 불러온 상태면 null(또는 생략) — 0점(실제로 기록 없음)과 구분한다. */
+  score?: number | null;
   message?: string;
 }
 
@@ -7,11 +8,12 @@ const DEFAULT_MESSAGE = "오늘도 햇빛 에너지를 충전했어요!";
 const EMPTY_MESSAGE = "오늘은 아직 햇빛을 충전하지 않았어요!";
 
 function SunshineScoreCard({
-  score = 0,
+  score = null,
   message,
 }: SunshineScoreCardProps) {
+  const displayScore = score ?? 0;
   const resolvedMessage =
-    message ?? (score > 0 ? DEFAULT_MESSAGE : EMPTY_MESSAGE);
+    message ?? (score === null || score > 0 ? DEFAULT_MESSAGE : EMPTY_MESSAGE);
   return (
     <article
       className="mx-auto flex h-[383px] w-full max-w-[370px] flex-col rounded-[8px] border border-[#FFF1D6] bg-white px-4 pb-4 pt-4"
@@ -27,7 +29,7 @@ function SunshineScoreCard({
       <div className="flex flex-1 flex-col items-center justify-center">
         <div
           className="relative flex h-[190px] w-[190px] items-center justify-center"
-          aria-label={`오늘의 햇빛 점수 ${score}점`}
+          aria-label={`오늘의 햇빛 점수 ${displayScore}점`}
         >
           {/* 태양 빛 효과 */}
           <div className="absolute h-[180px] w-[180px] rounded-full bg-[radial-gradient(circle,rgba(255,183,67,0.35)_0%,rgba(255,253,246,0)_70%)]" />
@@ -51,7 +53,7 @@ function SunshineScoreCard({
 
           {/* 점수 */}
           <strong className="relative z-10 text-[52px] font-bold leading-none text-white">
-            {score}
+            {displayScore}
           </strong>
         </div>
 
