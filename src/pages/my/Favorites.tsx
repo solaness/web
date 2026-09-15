@@ -10,6 +10,8 @@ import { CATEGORIES } from "../../constants/categories";
 import { getSunScore } from "../../constants/sunScore";
 import { getBookmarks, removeBookmark, type BookmarkRecord } from "../../firebase/firestore";
 import type { DailyActivity } from "../../data/historyCalendar";
+import AppTitle from "../../components/shared/AppTitle";
+import { useGoBack } from "../../hooks/useGoBack";
 
 const TOAST_DURATION_MS = 2000;
 
@@ -47,6 +49,7 @@ function toFavoriteActivity(bookmark: BookmarkRecord): DailyActivity {
 }
 
 function Favorites() {
+  const handleGoBack = useGoBack("/my");
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
   const userId = user?.uid ?? null;
@@ -143,9 +146,7 @@ function Favorites() {
       <BackgroundBlobs />
 
       <header className="relative z-10 h-[78px] overflow-hidden">
-        <h1 className="relative z-10 text-[24px] font-bold leading-[30px] text-[#F78903]">
-          Solaness
-        </h1>
+        <AppTitle onBack={handleGoBack} />
       </header>
 
       <section className="relative z-10 mt-[27px]" aria-label="즐겨찾기 목록">
