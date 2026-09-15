@@ -90,6 +90,9 @@ function VisitDetail() {
     navigate(`/map/${activity.placeId}`);
   };
 
+  const isLongPlaceName =
+  activity.placeName.length > 10;
+
   return (
     <main
       className="relative mx-auto min-h-[852px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[24px] pb-28 pt-5"
@@ -109,17 +112,27 @@ function VisitDetail() {
 
       <div className="relative z-10 mt-[44px] flex flex-col gap-[11px] ">
         {/* 장소 정보 */}
-        <section className="h-[126px] w-full rounded-[11px] border border-[#FFC14F] bg-[#FFFEF6] py-[12px] pl-[24px] pr-[14px]">
+        <section className="relative h-[126px] w-full overflow-hidden rounded-[11px] border border-[#FFC14F] bg-[#FFFEF6] py-[12px] pl-[24px] pr-[14px]">
           <span className="inline-flex rounded-full border border-[#FFC14F] px-[8px] py-[2px] text-[11px] font-medium leading-[12px] text-[#FFAC27]">
             {activity.category}
           </span>
 
-          <h2 className="mt-[8px] text-[32px] font-bold leading-[30px] text-[#754308]">
+          <h2
+            className={`mt-[7px] line-clamp-2 break-keep font-bold text-[#754308] ${
+              isLongPlaceName
+                ? "text-[24px] leading-[27px]"
+                : "text-[32px] leading-[30px]"
+            }`}
+          >
             {activity.placeName}
           </h2>
 
-          <p className="mt-[13px] text-[12px] leading-[14px] text-[#6B6B6B]">
-            📍 {activity.address}
+          <p className="absolute bottom-[10px] left-[24px] right-[14px] flex min-w-0 items-center gap-[4px] text-[12px] leading-[14px] text-[#6B6B6B]">
+            <span aria-hidden="true">📍</span>
+
+            <span className="truncate">
+              {activity.address}
+            </span>
           </p>
         </section>
 
