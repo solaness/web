@@ -90,9 +90,6 @@ function VisitDetail() {
     navigate(`/map/${activity.placeId}`);
   };
 
-  const isLongPlaceName =
-  activity.placeName.length > 10;
-
   return (
     <main
       className="relative mx-auto min-h-[852px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[24px] pb-28 pt-5"
@@ -117,13 +114,7 @@ function VisitDetail() {
             {activity.category}
           </span>
 
-          <h2
-            className={`mt-[7px] line-clamp-2 break-keep font-bold text-[#754308] ${
-              isLongPlaceName
-                ? "text-[24px] leading-[27px]"
-                : "text-[32px] leading-[30px]"
-            }`}
-          >
+          <h2 className="mt-[7px] line-clamp-2 break-words text-[clamp(24px,7vw,32px)] font-bold leading-[1.1] text-[#754308]">
             {activity.placeName}
           </h2>
 
