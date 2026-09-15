@@ -12,20 +12,13 @@ import { getBookmarks, removeBookmark, type BookmarkRecord } from "../../firebas
 import type { DailyActivity } from "../../data/historyCalendar";
 import AppTitle from "../../components/shared/AppTitle";
 import { useGoBack } from "../../hooks/useGoBack";
+import { formatDateKey } from "../../utils/date";
 
 const TOAST_DURATION_MS = 2000;
 
 interface ToastState {
   message: string;
   variant: "success" | "error";
-}
-
-function toDateKey(date: Date | null): string {
-  const value = date ?? new Date();
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 /** 티켓 컴포넌트(VisitRecordCard)를 그대로 재사용하기 위해 즐겨찾기 문서를 DailyActivity 모양으로 맞춘다. */
@@ -44,7 +37,7 @@ function toFavoriteActivity(bookmark: BookmarkRecord): DailyActivity {
     scorePerMinute: 0,
     imageUrl: bookmark.thumbnailUrl || undefined,
     visitStatus: categoryLabel,
-    date: toDateKey(bookmark.savedAt),
+    date: formatDateKey(bookmark.savedAt),
   };
 }
 
