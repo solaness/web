@@ -1,5 +1,7 @@
 //import timerGraphic from "../../assets/images/sunshine-timer.png";
 //이미지를 src/assets/images/sunshine-timer.png에 넣기
+import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
+
 interface SunshineTimerCardProps {
   recommendedMinutes?: number;
   remainingMinutes?: number;
@@ -8,8 +10,8 @@ interface SunshineTimerCardProps {
 }
 
 function SunshineTimerCard({
-  recommendedMinutes = 40,
-  remainingMinutes = 32,
+  recommendedMinutes = RECOMMENDED_SUNSHINE_MINUTES,
+  remainingMinutes = RECOMMENDED_SUNSHINE_MINUTES,
   uvIndex = 3,
   temperature = 24,
 }: SunshineTimerCardProps) {
