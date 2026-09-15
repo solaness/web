@@ -21,7 +21,12 @@ function RecordCategoryStats({
         카테고리별 방문 수 📍
       </h3>
 
-      <div className="mt-[9px] grid grid-cols-5 gap-1">
+      <div
+        className="mt-[9px] grid gap-1"
+        style={{
+          gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))`,
+        }}
+      >
         {categories.map((category) => (
           <div
             key={category.id}

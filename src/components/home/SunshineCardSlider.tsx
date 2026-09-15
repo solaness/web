@@ -22,17 +22,26 @@ function SunshineCardSlider() {
 
   const { activities, loadStatus } = useTodayVisitRecords();
 
-  const remainingMinutes = useMemo(() => {
+  const { todayScore, remainingMinutes } = useMemo(() => {
     if (loadStatus !== "success") {
-      return null;
+      return { todayScore: null, remainingMinutes: null };
     }
 
-    const todayMinutes = activities.reduce(
-      (sum, activity) => sum + activity.sunshineMinutes,
-      0,
+    const todayTotals = activities.reduce(
+      (totals, activity) => ({
+        score: totals.score + activity.sunshineScore,
+        minutes: totals.minutes + activity.sunshineMinutes,
+      }),
+      { score: 0, minutes: 0 },
     );
 
-    return Math.max(RECOMMENDED_SUNSHINE_MINUTES - todayMinutes, 0);
+    return {
+      todayScore: todayTotals.score,
+      remainingMinutes: Math.max(
+        RECOMMENDED_SUNSHINE_MINUTES - todayTotals.minutes,
+        0,
+      ),
+    };
   }, [activities, loadStatus]);
 
   const moveToCard = (
@@ -115,7 +124,7 @@ function SunshineCardSlider() {
 
         {/* 두 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineScoreCard />
+          <SunshineScoreCard score={todayScore} />
         </div>
       </div>
 
