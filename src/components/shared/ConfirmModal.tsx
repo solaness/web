@@ -3,8 +3,10 @@ interface ConfirmModalProps {
   description?: string;
   primaryLabel: string;
   onPrimary: () => void;
+  primaryDisabled?: boolean;
   secondaryLabel: string;
   onSecondary: () => void;
+  secondaryDisabled?: boolean;
 }
 
 /**
@@ -19,8 +21,10 @@ function ConfirmModal({
   description,
   primaryLabel,
   onPrimary,
+  primaryDisabled = false,
   secondaryLabel,
   onSecondary,
+  secondaryDisabled = false,
 }: ConfirmModalProps) {
   return (
     <div
@@ -50,16 +54,18 @@ function ConfirmModal({
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button
             type="button"
-            className="h-[46px] rounded-[23px] bg-[#FFAC27] text-sm font-bold text-white shadow-[2px_3px_4px_rgba(138,62,15,0.2)]"
+            className="h-[46px] rounded-[23px] bg-[#FFAC27] text-sm font-bold text-white shadow-[2px_3px_4px_rgba(138,62,15,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onPrimary}
+            disabled={primaryDisabled}
           >
             {primaryLabel}
           </button>
 
           <button
             type="button"
-            className="h-[46px] rounded-[23px] border border-[#FFAC27] bg-white text-sm font-bold text-[#FFAC27] shadow-[2px_3px_4px_rgba(138,62,15,0.12)]"
+            className="h-[46px] rounded-[23px] border border-[#FFAC27] bg-white text-sm font-bold text-[#FFAC27] shadow-[2px_3px_4px_rgba(138,62,15,0.12)] disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onSecondary}
+            disabled={secondaryDisabled}
           >
             {secondaryLabel}
           </button>

@@ -51,9 +51,10 @@ service cloud.firestore {
       // 방문 기록도 북마크와 같은 원리로 사용자 문서 아래 서브컬렉션에 둔다. 다만 같은
       // 장소를 여러 날 방문할 수 있어 문서 id를 placeId로 고정할 수 없으므로 Firestore가
       // 자동 생성한 id를 그대로 쓴다(= docId를 특정 필드와 비교하는 제약이 없다).
-      // update/delete는 앱에 해당 기능이 아직 없어 열어두지 않는다(추가되면 그때 규칙도 추가).
+      // 본인의 방문 기록만 조회, 생성 및 삭제할 수 있다.
+      // 수정 기능은 아직 없으므로 update 권한은 허용하지 않는다.
       match /visitRecords/{recordId} {
-        allow read: if request.auth != null && request.auth.uid == uid;
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
 
         allow create: if request.auth != null
           && request.auth.uid == uid
