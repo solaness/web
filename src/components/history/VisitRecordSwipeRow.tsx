@@ -15,6 +15,7 @@ interface VisitRecordSwipeRowProps {
   activity: DailyActivity;
   isOpen: boolean;
   isSelected?: boolean;
+  disabled?: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (activity: DailyActivity) => void;
   onRequestDelete: (
@@ -26,6 +27,7 @@ function VisitRecordSwipeRow({
   activity,
   isOpen,
   isSelected = false,
+  disabled = false,
   onOpenChange,
   onSelect,
   onRequestDelete,
@@ -57,6 +59,10 @@ function VisitRecordSwipeRow({
   const handlePointerDown = (
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
+    if (disabled || !event.isPrimary || event.button !== 0) {
+      return;
+    }
+
     startXRef.current = event.clientX;
     startOffsetRef.current =
       offsetRef.current;
@@ -72,7 +78,7 @@ function VisitRecordSwipeRow({
   const handlePointerMove = (
     event: React.PointerEvent<HTMLDivElement>,
   ) => {
-    if (startXRef.current === null) {
+    if (disabled || startXRef.current === null) {
       return;
     }
 
@@ -140,6 +146,10 @@ function VisitRecordSwipeRow({
   const handleCardClick = (
     selectedActivity: DailyActivity,
   ) => {
+    if (disabled) {
+      return;
+    }
+
     if (movedRef.current) {
       return;
     }
@@ -154,15 +164,54 @@ function VisitRecordSwipeRow({
   };
 
   const handleDeleteClick = () => {
+    if (disabled) {
+      return;
+    }
+
     updateOffset(0);
     onOpenChange(false);
     onRequestDelete(activity);
   };
 
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (disabled || event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      updateOffset(-REVEAL_WIDTH);
+      onOpenChange(true);
+      return;
+    }
+
+    if (event.key === "ArrowRight" || event.key === "Escape") {
+      event.preventDefault();
+      updateOffset(0);
+      onOpenChange(false);
+      return;
+    }
+
+    if (event.key === "Delete") {
+      event.preventDefault();
+      handleDeleteClick();
+    }
+  };
+
   const isDeleteVisible = offsetX !== 0;
 
   return (
-    <div className="relative w-full max-w-[345px]">
+    <div
+      className="relative w-full max-w-[345px] rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F78903]"
+      role="group"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      aria-keyshortcuts="ArrowLeft ArrowRight Delete Escape"
+      aria-label={`${activity.placeName} 방문 기록. 왼쪽 화살표 키로 삭제 버튼을 열거나 Delete 키로 삭제할 수 있습니다.`}
+      onKeyDown={handleKeyDown}
+    >
       {/* 오른쪽 삭제 버튼 */}
       <div className="absolute inset-y-0 right-0 z-0 w-[60px] overflow-hidden rounded-[12px]">
         <button
@@ -172,6 +221,7 @@ function VisitRecordSwipeRow({
           tabIndex={
             isDeleteVisible ? 0 : -1
           }
+          disabled={disabled}
           onClick={handleDeleteClick}
           className={`flex h-full w-[60px] items-center justify-center bg-[#FF544E] text-white ${
             isDragging

@@ -41,6 +41,9 @@ function Visits() {
   const [toast, setToast] =
     useState<ToastState | null>(null);
 
+  const [isDeleting, setIsDeleting] =
+    useState(false);
+
   const toastTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(
       null,
@@ -113,22 +116,28 @@ function Visits() {
   const handleRequestDelete = (
     activity: DailyActivity,
   ) => {
+    if (isDeleting) {
+      return;
+    }
+
     setOpenRecordId(null);
     setPendingDelete(activity);
   };
 
   const handleConfirmDelete = async () => {
-    if (!pendingDelete) {
+    if (!pendingDelete || isDeleting) {
       return;
     }
 
     const target = pendingDelete;
 
-    setPendingDelete(null);
+    setIsDeleting(true);
     setOpenRecordId(null);
 
     try {
       await removeRecord(target.id);
+
+      setPendingDelete(null);
 
       showToast({
         message: "방문 기록을 삭제했어요",
@@ -144,6 +153,8 @@ function Visits() {
         message: "삭제에 실패했어요",
         variant: "error",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -183,13 +194,14 @@ function Visits() {
           (activities.length > 0 ? (
             <div className="flex flex-col gap-[12px]">
               {activities.map((activity) => (
-                <VisitRecordSwipeRow
+                  <VisitRecordSwipeRow
                   key={activity.id}
                   activity={activity}
                   isOpen={openRecordId === activity.id}
-                  isSelected={
-                    selectedRecordId === activity.id
-                  }
+                    isSelected={
+                      selectedRecordId === activity.id
+                    }
+                    disabled={isDeleting}
                   onOpenChange={(open) =>
                     setOpenRecordId(
                       open ? activity.id : null,
@@ -219,19 +231,22 @@ function Visits() {
         <ConfirmModal
           title="방문 기록을 삭제할까요?"
           description="삭제된 기록은 복구할 수 없어요"
-          primaryLabel="삭제하기"
+          primaryLabel={isDeleting ? "삭제 중..." : "삭제하기"}
           onPrimary={handleConfirmDelete}
+          primaryDisabled={isDeleting}
           secondaryLabel="취소"
           onSecondary={() =>
             setPendingDelete(null)
           }
+          secondaryDisabled={isDeleting}
         />
       )}
 
       {toast && (
         <div className="fixed inset-x-0 bottom-[100px] z-50 flex justify-center px-6">
           <div
-            role="status"
+            role={toast.variant === "error" ? "alert" : "status"}
+            aria-live={toast.variant === "error" ? "assertive" : "polite"}
             className={`flex h-[58px] w-full max-w-[345px] items-center justify-center rounded-[25px] shadow-[4px_4px_4px_0_rgba(138,62,15,0.25)] ${
               toast.variant === "success"
                 ? "bg-[#FD9419]"
