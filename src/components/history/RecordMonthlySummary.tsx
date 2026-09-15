@@ -91,7 +91,7 @@ function RecordMonthlySummary({
 
   return (
     <section
-      className="h-[277px] w-[334px] rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[13px] py-[12px]"
+      className="h-[277px] w-full rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[13px] py-[12px]"
       style={{
         boxShadow: "4px 4px 4px 0 #FFE2B2",
       }}

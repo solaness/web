@@ -19,7 +19,7 @@ function RecordMonthlyPlaces({
 }: RecordMonthlyPlacesProps) {
   return (
     <section
-      className="h-[186px] w-[334px] rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[13px] py-[11px]"
+      className="h-[186px] w-full rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[13px] py-[11px]"
       style={{
         boxShadow: "4px 4px 4px 0 #FFE2B2",
       }}
