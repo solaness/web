@@ -1,6 +1,7 @@
 import type {
   TravelSchedule,
 } from "../../data/historyCalendar";
+import { formatDateKey } from "../../utils/date";
 
 interface MonthlyCalendarProps {
   year: number;
@@ -23,18 +24,6 @@ const WEEKDAYS = [
   "토",
 ];
 
-function formatDateKey(
-  year: number,
-  month: number,
-  day: number,
-): string {
-  return [
-    year,
-    String(month + 1).padStart(2, "0"),
-    String(day).padStart(2, "0"),
-  ].join("-");
-}
-
 function addDays(
   dateKey: string,
   amount: number,
@@ -47,16 +36,8 @@ function addDays(
     .split("-")
     .map(Number);
 
-  const date = new Date(
-    year,
-    month - 1,
-    day + amount,
-  );
-
   return formatDateKey(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
+    new Date(year, month - 1, day + amount),
   );
 }
 
@@ -102,13 +83,7 @@ function MonthlyCalendar({
     activityDates,
   );
 
-  const today = new Date();
-
-  const todayKey = formatDateKey(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
+  const todayKey = formatDateKey(new Date());
 
   return (
     <section
@@ -173,17 +148,15 @@ function MonthlyCalendar({
             );
           }
 
-          const dateKey = formatDateKey(
+          const cellDate = new Date(
             year,
             month,
             day,
           );
 
-          const weekday = new Date(
-            year,
-            month,
-            day,
-          ).getDay();
+          const dateKey = formatDateKey(cellDate);
+
+          const weekday = cellDate.getDay();
 
           const schedule = findSchedule(
             dateKey,

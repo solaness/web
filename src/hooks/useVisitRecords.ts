@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getVisitRecords } from "../firebase/firestore";
+import { getVisitRecords, removeVisitRecord, } from "../firebase/firestore";
 import type { DailyActivity } from "../data/historyCalendar";
 
 type LoadStatus = "loading" | "success" | "error";
@@ -68,9 +68,46 @@ export function useVisitRecords() {
     };
   }, [isGuest, userId, retryToken]);
 
+  const removeRecord = async (
+    recordId: string,
+  ) => {
+    if (!userId) {
+      throw new Error(
+        "로그인한 사용자만 방문 기록을 삭제할 수 있어요.",
+      );
+    }
+
+    await removeVisitRecord(
+      userId,
+      recordId,
+    );
+
+    setActivities((current) => {
+      const nextActivities =
+        current.filter(
+          (activity) =>
+            activity.id !== recordId,
+        );
+
+      cache.set(
+        userId,
+        nextActivities,
+      );
+
+      return nextActivities;
+    });
+  };
+
+  const retry = () => {
+    setRetryToken(
+      (token) => token + 1,
+    );
+  };
+
   return {
     activities,
     loadStatus,
-    retry: () => setRetryToken((token) => token + 1),
+    retry,
+    removeRecord,
   };
 }

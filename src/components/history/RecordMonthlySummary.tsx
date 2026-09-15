@@ -22,6 +22,8 @@ const CATEGORY_CONFIG = [
   { id: "sea", name: "바다", icon: "🌊", values: ["바다", "해변"] },
 ];
 
+const OTHER_CATEGORY = { id: "etc", name: "기타", icon: "📍" };
+
 function SummaryBox({
   label,
   value,
@@ -75,6 +77,17 @@ function RecordMonthlySummary({
       category.values.includes(activity.category),
     ).length,
   }));
+
+  const knownCategoryValues = CATEGORY_CONFIG.flatMap(
+    (category) => category.values,
+  );
+  const otherCount = activities.filter(
+    (activity) => !knownCategoryValues.includes(activity.category),
+  ).length;
+
+  if (otherCount > 0) {
+    categoryStats.push({ ...OTHER_CATEGORY, count: otherCount });
+  }
 
   return (
     <section
