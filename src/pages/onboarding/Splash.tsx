@@ -26,14 +26,11 @@ function Splash() {
   }
 
   return (
-    <main className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col items-center justify-center bg-[#FFFDF6]">
+    <main className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center bg-[#FFFDF6]">
       <BackgroundBlobs />
 
       <div className="relative z-10 flex flex-col items-center gap-2">
         <h1 className="text-[40px] font-bold text-[#F78903]">Solaness</h1>
-        <p className="text-sm font-medium text-[#B3A386]">
-          나에게 맞는 햇빛 충전 시간
-        </p>
       </div>
     </main>
   );

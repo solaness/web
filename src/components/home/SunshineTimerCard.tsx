@@ -1,33 +1,27 @@
 //import timerGraphic from "../../assets/images/sunshine-timer.png";
 //이미지를 src/assets/images/sunshine-timer.png에 넣기
-import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
+import { MAX_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
 
 interface SunshineTimerCardProps {
-  recommendedMinutes?: number;
-  /** 오늘 남은 충전 시간. 아직 안 불러온 상태면 null — "다 채웠다"고 잘못 단정하지 않기 위해 구분한다. */
-  remainingMinutes?: number | null;
-  uvIndex?: number;
-  temperature?: number;
+  maxMinutes?: number;
+  /** 오늘 충전한 시간. 아직 안 불러온 상태면 null — "다 채웠다"고 잘못 단정하지 않기 위해 구분한다. */
+  todayMinutes?: number | null;
 }
 
 function SunshineTimerCard({
-  recommendedMinutes = RECOMMENDED_SUNSHINE_MINUTES,
-  remainingMinutes = RECOMMENDED_SUNSHINE_MINUTES,
-  uvIndex = 3,
-  temperature = 24,
+  maxMinutes = MAX_SUNSHINE_MINUTES,
+  todayMinutes = null,
 }: SunshineTimerCardProps) {
-  const isReady = remainingMinutes !== null;
-  const displayRemainingMinutes = remainingMinutes ?? recommendedMinutes;
+  const isReady = todayMinutes !== null;
 
-  const safeRecommendedMinutes = Math.max(recommendedMinutes, 1);
+  const safeMaxMinutes = Math.max(maxMinutes, 1);
+  const cappedTodayMinutes = Math.min(Math.max(todayMinutes ?? 0, 0), safeMaxMinutes);
 
-  const remainingProgress = isReady
-    ? Math.min(Math.max(displayRemainingMinutes / safeRecommendedMinutes, 0), 1)
-    : 0;
+  const chargeProgress = isReady ? cappedTodayMinutes / safeMaxMinutes : 0;
 
   const circleRadius = 79;
   const circleLength = 2 * Math.PI * circleRadius;
-  const progressLength = circleLength * remainingProgress;
+  const progressLength = circleLength * chargeProgress;
 
   return (
     <article
@@ -38,17 +32,17 @@ function SunshineTimerCard({
       }}
     >
       <h2 className="text-[21px] font-bold leading-[22px] text-[#754308]">
-        권장 햇빛 충전 시간
+        오늘의 햇빛 충전 시간
       </h2>
 
         <div className="flex flex-1 flex-col items-center justify-center">
         <div
           className="relative h-[224.374px] w-[224.374px]"
           role="progressbar"
-          aria-label="남은 햇빛 충전 시간"
+          aria-label="오늘 충전한 햇빛 시간"
           aria-valuemin={0}
-          aria-valuemax={safeRecommendedMinutes}
-          aria-valuenow={isReady ? displayRemainingMinutes : undefined}
+          aria-valuemax={safeMaxMinutes}
+          aria-valuenow={isReady ? cappedTodayMinutes : undefined}
         >
           <svg
             viewBox="0 0 181.555 181.555"
@@ -65,14 +59,14 @@ function SunshineTimerCard({
               strokeWidth="20"
             />
 
-            {/* 남은 시간 진행 막대 */}
-            {remainingProgress > 0 && (
+            {/* 오늘 충전한 시간 진행 막대 */}
+            {chargeProgress > 0 && (
               <circle
                 cx="90.7775"
                 cy="90.7775"
                 r={circleRadius}
                 fill="none"
-                stroke="#FFDE96"
+                stroke="#FD9D2D"
                 strokeWidth="20"
                 strokeLinecap="round"
                 strokeDasharray={`${progressLength} ${circleLength}`}
@@ -82,21 +76,17 @@ function SunshineTimerCard({
           </svg>
 
           <strong
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[64px] font-bold leading-[22px] tracking-[-3px] text-[#FD9D2D] ${
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[64px] font-bold leading-none tracking-[-3px] text-[#FD9D2D] ${
               isReady ? "" : "opacity-40"
             }`}
           >
-            {isReady ? displayRemainingMinutes : "–"}
+            {isReady ? cappedTodayMinutes : "–"}
           </strong>
         </div>
 
-        <div className="mt-3 flex items-center justify-center gap-2 text-[19px] font-bold leading-[22px] text-[#754308]">
-          <span>UV {uvIndex}</span>
-          <span aria-hidden="true">·</span>
-          <span>{temperature}°C</span>
+        <div className="mt-4 text-[19px] font-bold leading-[22px] text-[#754308]">
+          {isReady ? cappedTodayMinutes : "–"}/{safeMaxMinutes}분
         </div>
-
-        
       </div>
     </article>
   );

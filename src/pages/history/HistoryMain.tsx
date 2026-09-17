@@ -42,7 +42,7 @@ function HistoryMain() {
 
   return (
     <main
-      className="relative mx-auto min-h-[1061px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[27px] pb-28 pt-5"
+      className="relative mx-auto min-h-[1061px] w-full max-w-md overflow-hidden bg-[#FFFDF6] px-[27px] pb-28 pt-5"
       style={{
         fontFamily:
           '"Pretendard Variable", Pretendard, sans-serif',
@@ -51,7 +51,7 @@ function HistoryMain() {
       <BackgroundBlobs />
 
       <header className="relative z-10 h-[78px] overflow-hidden">
-        <h1 className="relative z-10 text-[24px] font-bold leading-[30px] text-[#F78903]">
+        <h1 className="relative z-10 text-[32px] font-bold leading-[30px] text-[#F78903]">
           Solaness
         </h1>
 

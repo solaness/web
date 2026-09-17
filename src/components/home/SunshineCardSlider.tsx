@@ -5,10 +5,10 @@ import {
   useState,
   type UIEvent,
 } from "react";
+import SunshineCardSkeleton from "./SunshineCardSkeleton";
 import SunshineScoreCard from "./SunshineScoreCard";
 import SunshineTimerCard from "./SunshineTimerCard";
 import { useTodayVisitRecords } from "../../hooks/useTodayVisitRecords";
-import { RECOMMENDED_SUNSHINE_MINUTES } from "../../constants/sunshineTimer";
 
 const CARD_COUNT = 2;
 const AUTO_SLIDE_DELAY = 15_000;
@@ -21,10 +21,11 @@ function SunshineCardSlider() {
     useState(0);
 
   const { activities, loadStatus } = useTodayVisitRecords();
+  const isLoading = loadStatus === "loading";
 
-  const { todayScore, remainingMinutes } = useMemo(() => {
+  const { todayScore, todayMinutes } = useMemo(() => {
     if (loadStatus !== "success") {
-      return { todayScore: null, remainingMinutes: null };
+      return { todayScore: null, todayMinutes: null };
     }
 
     const todayTotals = activities.reduce(
@@ -37,10 +38,7 @@ function SunshineCardSlider() {
 
     return {
       todayScore: todayTotals.score,
-      remainingMinutes: Math.max(
-        RECOMMENDED_SUNSHINE_MINUTES - todayTotals.minutes,
-        0,
-      ),
+      todayMinutes: todayTotals.minutes,
     };
   }, [activities, loadStatus]);
 
@@ -119,12 +117,20 @@ function SunshineCardSlider() {
       >
         {/* 첫 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineTimerCard remainingMinutes={remainingMinutes} />
+          {isLoading ? (
+            <SunshineCardSkeleton />
+          ) : (
+            <SunshineTimerCard todayMinutes={todayMinutes} />
+          )}
         </div>
 
         {/* 두 번째 카드 */}
         <div className="flex w-full shrink-0 snap-center items-center justify-center px-[16px] py-[8px] min-[393px]:px-[11px]">
-          <SunshineScoreCard score={todayScore} />
+          {isLoading ? (
+            <SunshineCardSkeleton />
+          ) : (
+            <SunshineScoreCard score={todayScore} />
+          )}
         </div>
       </div>
 
@@ -143,7 +149,7 @@ function SunshineCardSlider() {
             <button
               key={index}
               type="button"
-              className={`h-[9px] w-[9px] rounded-full transition-colors ${
+              className={`h-[9px] w-[9px] rounded-full outline-none transition-colors ${
                 isActive
                   ? "bg-[#FFAC27]"
                   : "border border-[#FFAC27] bg-white"

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "../../contexts/AuthContext";
 import GoogleLoginButton from "../../components/shared/GoogleLoginButton";
-import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.png";
+import solnyangHelloSun from "../../assets/images/solnyang-hello-sun.svg";
 
 const HOME_PATH = "/home";
 const ONBOARDING_PATH = "/onboarding/region";

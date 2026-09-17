@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import RecommendList from "../components/home/RecommendList";
+import RecommendListSkeleton from "../components/home/RecommendListSkeleton";
 import SunshineCardSlider from "../components/home/SunshineCardSlider";
 import BackgroundBlobs from "../components/shared/BackgroundBlobs";
-import LoadingScreen from "../components/shared/LoadingScreen";
 import ErrorScreen from "../components/shared/ErrorScreen";
 import { areaBasedList } from "../api/tourApi";
 import { toTourApiAreaCode } from "../constants/tourApiAreaCodes";
@@ -50,7 +50,7 @@ function Home() {
 
   return (
     <main
-      className="relative mx-auto min-h-[852px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[11px] pb-28 pt-5"
+      className="relative mx-auto min-h-[852px] w-full max-w-md overflow-hidden bg-[#FFFDF6] px-[11px] pb-28 pt-5"
       style={{
         fontFamily:
           '"Pretendard Variable", Pretendard, sans-serif',
@@ -59,16 +59,14 @@ function Home() {
       <BackgroundBlobs />
 
       <header className="mb-5">
-        <h1 className="text-[24px] font-bold text-[#F78903]">
+        <h1 className="text-[32px] font-bold text-[#F78903]">
           Solaness
         </h1>
       </header>
 
       <SunshineCardSlider />
 
-      {status === "loading" && (
-        <LoadingScreen message="추천 장소를 불러오는 중..." />
-      )}
+      {status === "loading" && <RecommendListSkeleton />}
 
       {status === "error" && (
         <ErrorScreen

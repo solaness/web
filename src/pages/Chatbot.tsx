@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { areaBasedList } from "../api/tourApi";
 import IconChevronLeft from "../assets/icons/icon-chevron-left.svg?react";
 import IconPin from "../assets/icons/icon-pin.svg?react";
-import solnyangHelloSun from "../assets/images/solnyang-hello-sun.png";
+import solnyangHelloSun from "../assets/images/solnyang-hello-sun.svg";
 import solnyangProfile from "../assets/images/solnyang-profile.svg";
 import BackgroundBlobs from "../components/shared/BackgroundBlobs";
 import { CHATBOT_MOODS } from "../data/chatbotMoods";
@@ -325,9 +325,15 @@ function Chatbot() {
   const navigate = useNavigate();
   const [started, setStarted] = useState(false);
   const [rounds, setRounds] = useState<ChatRound[]>([]);
+  const messagesContainerRef = useRef<HTMLElement>(null);
 
   const lastRound = rounds.at(-1);
   const isFinished = lastRound?.batches.at(-1)?.restartId === "end";
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    container?.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+  }, [rounds]);
 
   // pageNo를 배치마다 다르게 줘서 "더 추천"이 매번 같은 1페이지를 반복 조회하지 않게 한다
   // (같은 페이지만 계속 받으면 excludeIds로 걸러낼 때 카페처럼 표본이 적은 카테고리는 금방 바닥난다).
@@ -468,7 +474,7 @@ function Chatbot() {
 
   return (
     <main
-      className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-[#FFFDF6]"
       style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
     >
       <BackgroundBlobs />
@@ -526,7 +532,10 @@ function Chatbot() {
           </button>
         </section>
       ) : (
-        <section className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-4">
+        <section
+          ref={messagesContainerRef}
+          className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-4"
+        >
           <span className="mx-auto rounded-full border border-[#EFE6D8] bg-white px-3 py-1 text-xs text-[#A1A1A1]">
             {formatToday()}
           </span>

@@ -12,7 +12,7 @@ interface AppTitleProps {
  */
 function AppTitle({
   onBack,
-  titleClassName = "text-[24px] font-bold text-[#F78903]",
+  titleClassName = "text-[32px] font-bold text-[#F78903]",
 }: AppTitleProps) {
   const title = <h1 className={titleClassName}>Solaness</h1>;
 

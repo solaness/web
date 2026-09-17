@@ -97,7 +97,7 @@ function EditRegion() {
 
   if (isGuest) {
     return (
-      <main className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]">
+      <main className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-[#FFFDF6]">
         <GuestNotice message="지역 수정은 로그인 후 이용할 수 있어요" />
       </main>
     );
@@ -105,7 +105,7 @@ function EditRegion() {
 
   return (
     <main
-      className="relative mx-auto flex h-[100dvh] min-h-[600px] w-full max-w-[393px] flex-col overflow-hidden bg-[#FFFDF6]"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-[#FFFDF6]"
       style={{
         fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}

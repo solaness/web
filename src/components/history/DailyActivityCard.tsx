@@ -1,4 +1,4 @@
-import mascotImage from "../../assets/images/solnyang-hello-sun.png";
+import mascotImage from "../../assets/images/solnyang-hello-sun.svg";
 import type {
   DailyActivity,
 } from "../../data/historyCalendar";

@@ -120,7 +120,7 @@ function VisitRecordForm() {
 
   return (
     <main
-      className="relative mx-auto min-h-[852px] w-full max-w-[393px] overflow-hidden bg-[#FFFDF6] px-[24px] pb-28 pt-5"
+      className="relative mx-auto min-h-[852px] w-full max-w-md overflow-hidden bg-[#FFFDF6] px-[24px] pb-28 pt-5"
       style={{
         fontFamily:
           '"Pretendard Variable", Pretendard, sans-serif',
@@ -131,7 +131,7 @@ function VisitRecordForm() {
       <header className="relative z-10 flex items-center gap-1">
         <AppTitle
           onBack={goBack}
-          titleClassName="text-[24px] font-bold leading-[30px] text-[#F78903]"
+          titleClassName="text-[32px] font-bold leading-[30px] text-[#F78903]"
         />
       </header>
 

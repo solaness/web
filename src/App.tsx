@@ -98,7 +98,7 @@ function App() {
                 <RequireAuth
                   allowGuest={false}
                   guestFallback={
-                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                    <div className="mx-auto min-h-screen w-full max-w-md bg-[#FFFDF6] px-[19px] pt-10">
                       <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
                     </div>
                   }
@@ -114,7 +114,7 @@ function App() {
                 <RequireAuth
                   allowGuest={false}
                   guestFallback={
-                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                    <div className="mx-auto min-h-screen w-full max-w-md bg-[#FFFDF6] px-[19px] pt-10">
                       <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
                     </div>
                   }
@@ -130,7 +130,7 @@ function App() {
                 <RequireAuth
                   allowGuest={false}
                   guestFallback={
-                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                    <div className="mx-auto min-h-screen w-full max-w-md bg-[#FFFDF6] px-[19px] pt-10">
                       <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
                     </div>
                   }
@@ -146,7 +146,7 @@ function App() {
                 <RequireAuth
                   allowGuest={false}
                   guestFallback={
-                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                    <div className="mx-auto min-h-screen w-full max-w-md bg-[#FFFDF6] px-[19px] pt-10">
                       <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
                     </div>
                   }
@@ -162,7 +162,7 @@ function App() {
                 <RequireAuth
                   allowGuest={false}
                   guestFallback={
-                    <div className="mx-auto min-h-screen w-full max-w-[393px] bg-[#FFFDF6] px-[19px] pt-10">
+                    <div className="mx-auto min-h-screen w-full max-w-md bg-[#FFFDF6] px-[19px] pt-10">
                       <GuestNotice message="기록은 로그인 후 확인할 수 있어요" />
                     </div>
                   }

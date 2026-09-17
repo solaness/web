@@ -256,7 +256,7 @@ function MapSearch() {
 
   return (
     <main
-      className="relative mx-auto min-h-screen w-full max-w-[393px] overflow-x-hidden bg-[#FFFDF6]"
+      className="relative mx-auto min-h-screen w-full max-w-md overflow-x-hidden bg-[#FFFDF6]"
       style={{
         fontFamily: '"Pretendard Variable", Pretendard, sans-serif',
       }}

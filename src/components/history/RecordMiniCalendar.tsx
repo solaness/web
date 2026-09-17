@@ -30,7 +30,7 @@ function RecordMiniCalendar({
 
   return (
     <section
-      className="h-[302px] w-[339px] rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[14px] py-[13px]"
+      className="h-[302px] w-full rounded-[20px] border border-[#FFAC27] bg-[#FFFEF8] px-[14px] py-[13px]"
       style={{
         boxShadow: "4px 4px 4px 0 #FFE2B2",
       }}
