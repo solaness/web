@@ -18,7 +18,7 @@ function EditAvatar() {
       <header className="relative z-10 flex h-[78px] items-center">
         <AppTitle
           onBack={goBack}
-          titleClassName="text-[24px] font-bold text-[#F78903]"
+          titleClassName="text-[32px] font-bold text-[#F78903]"
         />
       </header>
 

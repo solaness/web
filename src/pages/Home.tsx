@@ -59,7 +59,7 @@ function Home() {
       <BackgroundBlobs />
 
       <header className="mb-5">
-        <h1 className="text-[24px] font-bold text-[#F78903]">
+        <h1 className="text-[32px] font-bold text-[#F78903]">
           Solaness
         </h1>
       </header>

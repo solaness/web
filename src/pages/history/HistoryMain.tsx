@@ -51,7 +51,7 @@ function HistoryMain() {
       <BackgroundBlobs />
 
       <header className="relative z-10 h-[78px] overflow-hidden">
-        <h1 className="relative z-10 text-[24px] font-bold leading-[30px] text-[#F78903]">
+        <h1 className="relative z-10 text-[32px] font-bold leading-[30px] text-[#F78903]">
           Solaness
         </h1>
 
