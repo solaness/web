@@ -211,7 +211,9 @@ function Calendar() {
       }}
     >
       <header className="flex items-center gap-1">
-        <AppTitle onBack={goBack} />
+        <AppTitle 
+          onBack={goBack} 
+          titleClassName="text-[32px] font-bold leading-[30px] text-[#F78903]" />
       </header>
 
       {loadStatus === "loading" && (
