@@ -23,12 +23,18 @@ function ResultTypeCard({ typeInfo }: ResultTypeCardProps) {
         <h1 className="text-xl font-bold text-[#754308]">{titleWithEmoji}</h1>
       </div>
 
-      {/* TODO: 실제 유형별 캐릭터 이미지 에셋이 준비되면 typeInfo.imageUrl로 교체.
-          현재는 아직 export된 8종 일러스트가 없어 온보딩 로그인 화면 캐릭터를 placeholder로 재사용한다. */}
       <img
-        src={typeInfo.imageUrl ?? solnyangHelloSun}
+        src={
+          typeInfo.imageUrl ??
+          solnyangHelloSun
+        }
         alt={`${typeInfo.title} 캐릭터 이미지`}
         className="h-[160px] w-[160px] object-contain"
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src =
+            solnyangHelloSun;
+        }}
       />
 
       <div className="flex flex-col items-center gap-1 text-center text-sm leading-[22px] text-[#754308]">
