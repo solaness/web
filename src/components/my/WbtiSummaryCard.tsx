@@ -20,12 +20,18 @@ function WbtiSummaryCard({ typeInfo }: WbtiSummaryCardProps) {
           "linear-gradient(180deg, rgba(255, 250, 232, 0.7) 0%, rgba(255, 239, 210, 0.7) 100%)",
       }}
     >
-      {/* TODO: 실제 유형별 캐릭터 이미지 에셋이 준비되면 typeInfo.imageUrl로 교체.
-          ResultTypeCard와 동일하게 현재는 placeholder 이미지를 쓴다. */}
       <img
-        src={typeInfo.imageUrl ?? solnyangHelloSun}
+        src={
+          typeInfo.imageUrl ??
+          solnyangHelloSun
+        }
         alt={`${typeInfo.title} 캐릭터 이미지`}
         className="h-[72px] w-[72px] shrink-0 object-contain"
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src =
+            solnyangHelloSun;
+        }}
       />
 
       <div className="flex min-w-0 flex-col gap-1">
