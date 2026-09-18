@@ -41,6 +41,13 @@ function EditProfile() {
   const hasEditedNicknameRef = useRef(false);
 
   const handleOpenAvatarSheet = () => {
+    // 로그인 사용자의 Firestore 프로필을 아직 못 불러온 상태라면 selectedAvatarId가
+    // 실제 저장값이 아니라 DEFAULT_AVATAR_ID로 초기화돼 있을 수 있다. 이 상태에서 바로
+    // 확인을 누르면 진짜 저장된 아바타를 기본값으로 덮어써 버리므로, 로딩 중엔 열지 않는다.
+    if (!isGuest && isFetchingProfile) {
+      return;
+    }
+
     setDraftAvatarId(selectedAvatarId);
     setAvatarSaveError(null);
     setIsAvatarSheetOpen(true);
@@ -173,6 +180,7 @@ function EditProfile() {
             label="쏠냥이 선택하기"
             onClick={handleOpenAvatarSheet}
             arrowVariant="circle"
+            disabled={isFetchingProfile}
           />
 
           <div className="flex flex-col gap-3">

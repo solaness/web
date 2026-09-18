@@ -2,8 +2,15 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // 이 목록은 src/data/avatarOptions.ts의 AVATAR_OPTIONS와 반드시 같이 맞춰야 한다.
+    // 규칙 파일은 클라이언트 코드를 import할 수 없어 둘을 자동으로 동기화할 방법이 없으니,
+    // 아바타를 추가/삭제할 때는 두 파일을 함께 수정할 것.
     function hasValidAvatarId(data) {
       return !('avatarId' in data)
+        // null도 "값 없음"으로 취급해 허용한다 — 그래야 avatarId가 실수로 null로
+        // 저장되더라도(수동 편집 등) 이후 닉네임/지역 등 다른 필드 수정까지 영구히
+        // 막히는 상황을 피할 수 있다.
+        || data.avatarId == null
         || data.avatarId in [
           'avatar-00', 'avatar-01', 'avatar-02', 'avatar-03',
           'avatar-04', 'avatar-05', 'avatar-06', 'avatar-07',
