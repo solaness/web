@@ -88,7 +88,12 @@ function MyMain() {
       </header>
 
       <section className="relative z-10 flex flex-col gap-6 px-[19px] pb-8 pt-6">
-        <ProfileHeader user={user} isGuest={isGuest} nickname={nickname} />
+        <ProfileHeader
+          user={user}
+          isGuest={isGuest}
+          nickname={nickname}
+          avatarId={profile?.avatarId}
+        />
 
         {isFetchingWbtiType ? (
           <WbtiSummaryCardSkeleton />

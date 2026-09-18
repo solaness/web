@@ -25,13 +25,15 @@ function EditProfile() {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const { profile, isLoading: isFetchingProfile } = useUserProfile();
-  const { selectedAvatarId, selectAvatar } = useSelectedAvatar();
+  const { selectedAvatarId, selectAvatar } = useSelectedAvatar(profile?.avatarId);
 
   const [nicknameInput, setNicknameInput] = useState("");
   const [initialNickname, setInitialNickname] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isAvatarSheetOpen, setIsAvatarSheetOpen] = useState(false);
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [avatarSaveError, setAvatarSaveError] = useState<string | null>(null);
   const [draftAvatarId, setDraftAvatarId] =
     useState<AvatarId>(selectedAvatarId);
   // 프리필이 늦게 도착했을 때, 그 사이 사용자가 이미 입력을 시작했다면 타이핑을 덮어쓰지
@@ -40,12 +42,23 @@ function EditProfile() {
 
   const handleOpenAvatarSheet = () => {
     setDraftAvatarId(selectedAvatarId);
+    setAvatarSaveError(null);
     setIsAvatarSheetOpen(true);
   };
 
-  const handleConfirmAvatar = () => {
-    selectAvatar(draftAvatarId);
-    setIsAvatarSheetOpen(false);
+  const handleConfirmAvatar = async () => {
+    setIsAvatarSaving(true);
+    setAvatarSaveError(null);
+
+    try {
+      await selectAvatar(draftAvatarId);
+      setIsAvatarSheetOpen(false);
+    } catch (error) {
+      console.error("쏠냥이 프로필 저장 실패:", error);
+      setAvatarSaveError("쏠냥이 변경에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsAvatarSaving(false);
+    }
   };
 
   const handleCloseAvatarSheet = useCallback(() => {
@@ -128,7 +141,13 @@ function EditProfile() {
         </div>
       ) : (
         <section className="relative z-10 flex flex-col gap-6 px-[19px] pb-8 pt-6">
-          <ProfileHeader user={user} isGuest={isGuest} nickname={initialNickname} showEmail />
+          <ProfileHeader
+            user={user}
+            isGuest={isGuest}
+            nickname={initialNickname}
+            avatarId={profile?.avatarId}
+            showEmail
+          />
 
           <div>
             <p className="mb-2 text-sm font-semibold text-[#754308]">닉네임 변경</p>
@@ -196,6 +215,8 @@ function EditProfile() {
         onSelect={setDraftAvatarId}
         onConfirm={handleConfirmAvatar}
         onClose={handleCloseAvatarSheet}
+        isConfirming={isAvatarSaving}
+        errorMessage={avatarSaveError}
       />
     </main>
   );

@@ -2,6 +2,15 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function hasValidAvatarId(data) {
+      return !('avatarId' in data)
+        || data.avatarId in [
+          'avatar-00', 'avatar-01', 'avatar-02', 'avatar-03',
+          'avatar-04', 'avatar-05', 'avatar-06', 'avatar-07',
+          'avatar-08', 'avatar-09', 'avatar-10', 'avatar-11'
+        ];
+    }
+
     match /users/{uid} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
 
@@ -9,6 +18,7 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
+        && hasValidAvatarId(request.resource.data)
         && request.resource.data.onboardingCompleted == false;
 
       // Clients may only flip onboardingCompleted from false to true (a
@@ -19,6 +29,7 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
+        && hasValidAvatarId(request.resource.data)
         && (
           request.resource.data.onboardingCompleted == resource.data.onboardingCompleted
           || (resource.data.onboardingCompleted == false && request.resource.data.onboardingCompleted == true)

@@ -17,6 +17,10 @@ import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiAnswerMap, WbtiTypeId } from "../types/wbti";
 import type { PlaceCategoryCode } from "../types/place";
 import type { DailyActivity } from "../data/historyCalendar";
+import {
+  isAvatarId,
+  type AvatarId,
+} from "../data/avatarOptions";
 
 export interface OnboardingRegionInput {
   provinceCode: string;
@@ -77,6 +81,7 @@ export interface UserProfile {
   regionProvinceCode?: string;
   regionDistrictCode?: string;
   wbtiTypeId?: WbtiTypeId;
+  avatarId?: AvatarId;
 }
 
 /**
@@ -99,6 +104,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     regionProvinceCode: data.regionProvinceCode,
     regionDistrictCode: data.regionDistrictCode,
     wbtiTypeId: data.wbtiTypeId && isWbtiTypeId(data.wbtiTypeId) ? data.wbtiTypeId : undefined,
+    avatarId: data.avatarId && isAvatarId(data.avatarId) ? data.avatarId : undefined,
   };
 }
 
@@ -108,6 +114,12 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function updateNickname(uid: string, nickname: string): Promise<void> {
   const userRef = doc(db, "users", uid);
   await setDoc(userRef, { nickname }, { merge: true });
+}
+
+/** 마이페이지에서 선택한 쏠냥이 프로필 ID를 사용자 문서에 저장한다. */
+export async function updateAvatarId(uid: string, avatarId: AvatarId): Promise<void> {
+  const userRef = doc(db, "users", uid);
+  await setDoc(userRef, { avatarId }, { merge: true });
 }
 
 /**

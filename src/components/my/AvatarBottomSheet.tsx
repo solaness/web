@@ -17,6 +17,8 @@ interface AvatarBottomSheetProps {
   onSelect: (avatarId: AvatarId) => void;
   onConfirm: () => void;
   onClose: () => void;
+  isConfirming?: boolean;
+  errorMessage?: string | null;
 }
 
 const CLOSE_DRAG_DISTANCE = 80;
@@ -28,6 +30,8 @@ function AvatarBottomSheet({
   onSelect,
   onConfirm,
   onClose,
+  isConfirming = false,
+  errorMessage = null,
 }: AvatarBottomSheetProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartYRef = useRef<number | null>(null);
@@ -322,12 +326,22 @@ function AvatarBottomSheet({
               </p>
             )}
 
+            {errorMessage && (
+              <p
+                role="alert"
+                className="mt-4 text-center text-[13px] font-medium text-red-500"
+              >
+                {errorMessage}
+              </p>
+            )}
+
             <button
               type="button"
               onClick={onConfirm}
-              className="mt-6 h-[53px] w-full rounded-[25px] bg-[#FFAC27] text-[16px] font-bold text-white shadow-[4px_4px_4px_rgba(138,62,15,0.25)] transition-transform active:scale-[0.98]"
+              disabled={isConfirming}
+              className="mt-6 h-[53px] w-full rounded-[25px] bg-[#FFAC27] text-[16px] font-bold text-white shadow-[4px_4px_4px_rgba(138,62,15,0.25)] transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              이 쏠냥이로 바꾸기
+              {isConfirming ? "변경 중..." : "이 쏠냥이로 바꾸기"}
             </button>
           </div>
         </section>
