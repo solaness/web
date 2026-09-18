@@ -30,6 +30,9 @@ function AvatarBottomSheet({
 }: AvatarBottomSheetProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartYRef = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -40,21 +43,64 @@ function AvatarBottomSheet({
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const focusTimer = window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableElements =
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+
+      if (!focusableElements?.length) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement =
+        focusableElements[focusableElements.length - 1];
+
+      if (
+        event.shiftKey &&
+        document.activeElement === firstElement
+      ) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === lastElement
+      ) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      window.clearTimeout(focusTimer);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener(
         "keydown",
         handleKeyDown,
       );
+      previousFocusRef.current?.focus();
     };
   }, [open, onClose]);
 
@@ -87,9 +133,16 @@ function AvatarBottomSheet({
   const finishDrag = (
     event: ReactPointerEvent<HTMLDivElement>,
   ) => {
-    if (dragStartYRef.current === null) {
+    const dragStartY = dragStartYRef.current;
+
+    if (dragStartY === null) {
       return;
     }
+
+    const finalDragDistance = Math.max(
+      0,
+      event.clientY - dragStartY,
+    );
 
     if (
       event.currentTarget.hasPointerCapture(
@@ -103,7 +156,10 @@ function AvatarBottomSheet({
 
     dragStartYRef.current = null;
 
-    if (dragOffset >= CLOSE_DRAG_DISTANCE) {
+    if (
+      event.type === "pointerup" &&
+      finalDragDistance >= CLOSE_DRAG_DISTANCE
+    ) {
       onClose();
     }
 
@@ -122,6 +178,7 @@ function AvatarBottomSheet({
     >
       <div className="relative h-full w-full max-w-md">
         <section
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="avatar-sheet-title"
@@ -145,6 +202,16 @@ function AvatarBottomSheet({
           >
             <div className="h-[5px] w-[48px] rounded-full bg-[#D9D9D9]" />
           </div>
+
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label="쏠냥이 선택 창 닫기"
+            className="absolute right-[20px] top-[28px] flex h-[32px] w-[32px] items-center justify-center rounded-full bg-[#FFF3DD] text-[24px] leading-none text-[#A88455]"
+          >
+            ×
+          </button>
 
           <div className="max-h-[calc(82dvh-48px)] overflow-y-auto">
             <header className="mb-5 text-center">
