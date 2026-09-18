@@ -128,10 +128,10 @@ function VisitRecordForm() {
     >
       <BackgroundBlobs />
 
-      <header className="relative z-10 flex items-center gap-1">
+      <header className="relative z-10 -ml-[5px] mt-[4px] flex items-center gap-1">
         <AppTitle
           onBack={goBack}
-          titleClassName="text-[32px] font-bold leading-[30px] text-[#F78903]"
+          titleClassName="text-[32px] font-bold text-[#F78903]"
         />
       </header>
 

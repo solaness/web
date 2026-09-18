@@ -8,6 +8,7 @@ import { areaBasedList } from "../api/tourApi";
 import { toTourApiAreaCode } from "../constants/tourApiAreaCodes";
 import { useUserProfile } from "../hooks/useUserProfile";
 import type { Place } from "../types/place";
+import AppTitle from "../components/shared/AppTitle";
 
 const RECOMMENDATION_COUNT = 10;
 
@@ -58,10 +59,10 @@ function Home() {
     >
       <BackgroundBlobs />
 
-      <header className="mb-5">
-        <h1 className="text-[32px] font-bold text-[#F78903]">
-          Solaness
-        </h1>
+      <header className="relative z-10 mb-5 ml-[8px] mt-[4px]">
+        <AppTitle
+          titleClassName="text-[32px] font-bold text-[#F78903]"
+        />
       </header>
 
       <SunshineCardSlider />
