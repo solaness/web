@@ -210,10 +210,11 @@ function Calendar() {
           '"Pretendard Variable", Pretendard, sans-serif',
       }}
     >
-      <header className="flex items-center gap-1">
-        <AppTitle 
-          onBack={goBack} 
-          titleClassName="text-[32px] font-bold leading-[30px] text-[#F78903]" />
+      <header className="-ml-[4px] mt-[4px] flex items-center gap-1">
+        <AppTitle
+          onBack={goBack}
+          titleClassName="text-[32px] font-bold text-[#F78903]"
+        />
       </header>
 
       {loadStatus === "loading" && (
