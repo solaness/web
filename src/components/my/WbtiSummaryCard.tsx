@@ -23,7 +23,7 @@ function WbtiSummaryCard({ typeInfo }: WbtiSummaryCardProps) {
       <img
         src={typeInfo.characterImageUrl ?? typeInfo.imageUrl ?? solnyangHelloSun}
         alt={`${typeInfo.title} 캐릭터 이미지`}
-        className="h-[72px] w-[72px] shrink-0 object-contain"
+        className="h-[100px] w-[100px] shrink-0 object-contain"
         onError={(event) => {
           event.currentTarget.onerror = null;
           event.currentTarget.src = solnyangHelloSun;
