@@ -71,14 +71,6 @@ function Result() {
     }
   };
 
-  const handleShare = () => {
-    // TODO: 공유하기 기능 구현 예정 (우선순위 낮음)
-  };
-
-  const handleSave = () => {
-    // TODO: 저장하기 기능 구현 예정 (우선순위 낮음)
-  };
-
   return (
     <main
       className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center overflow-hidden bg-[#FFFDF6] px-[19px]"
@@ -91,12 +83,7 @@ function Result() {
       <div className="relative z-10 flex w-full flex-col items-center gap-6">
         <ResultTypeCard typeInfo={typeInfo} />
 
-        <ResultActionButtons
-          onStart={handleStart}
-          isSubmitting={isSubmitting}
-          onShare={handleShare}
-          onSave={handleSave}
-        />
+        <ResultActionButtons onStart={handleStart} isSubmitting={isSubmitting} />
 
         {errorMessage && (
           <p
