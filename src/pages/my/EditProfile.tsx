@@ -158,20 +158,29 @@ function EditProfile() {
 
           <div>
             <p className="mb-2 text-sm font-semibold text-[#754308]">닉네임 변경</p>
-            <div className="flex h-[42px] w-full items-center gap-3 rounded-[16px] border border-[#FFAC27] bg-[#FFFDF4] px-4">
-              <IconProfile className="h-5 w-5 shrink-0 text-[#FFAC27]" />
-              <input
-                value={nicknameInput}
-                onChange={(event) => {
-                  hasEditedNicknameRef.current = true;
-                  setNicknameInput(event.target.value);
-                }}
-                maxLength={NICKNAME_MAX_LENGTH}
-                placeholder="닉네임을 입력해 주세요"
-                className="flex-1 bg-transparent text-sm font-medium text-[#4F4F4F] outline-none placeholder:text-[#D9D9D9]"
-              />
-              <IconEdit className="h-5 w-5 shrink-0 text-[#FFAC27]" />
-            </div>
+            {isFetchingProfile ? (
+              <div
+                className="flex h-[42px] w-full animate-pulse items-center rounded-[16px] border border-[#FFE1A8] bg-[#FFFDF4] px-4"
+                aria-hidden="true"
+              >
+                <div className="h-4 w-24 rounded bg-[#FFEFD2]" />
+              </div>
+            ) : (
+              <div className="flex h-[42px] w-full items-center gap-3 rounded-[16px] border border-[#FFAC27] bg-[#FFFDF4] px-4">
+                <IconProfile className="h-5 w-5 shrink-0 text-[#FFAC27]" />
+                <input
+                  value={nicknameInput}
+                  onChange={(event) => {
+                    hasEditedNicknameRef.current = true;
+                    setNicknameInput(event.target.value);
+                  }}
+                  maxLength={NICKNAME_MAX_LENGTH}
+                  placeholder="닉네임을 입력해 주세요"
+                  className="flex-1 bg-transparent text-sm font-medium text-[#4F4F4F] outline-none placeholder:text-[#D9D9D9]"
+                />
+                <IconEdit className="h-5 w-5 shrink-0 text-[#FFAC27]" />
+              </div>
+            )}
           </div>
 
           <MyMenuRow
