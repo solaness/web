@@ -7,6 +7,7 @@ import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import ErrorScreen from "../../components/shared/ErrorScreen";
 import { useVisitRecords } from "../../hooks/useVisitRecords";
+import AppTitle from "../../components/shared/AppTitle";
 
 const now = new Date();
 const DISPLAY_YEAR = now.getFullYear();
@@ -50,16 +51,20 @@ function HistoryMain() {
     >
       <BackgroundBlobs />
 
-      <header className="relative z-10 h-[78px] overflow-hidden">
-        <h1 className="relative z-10 text-[32px] font-bold leading-[30px] text-[#F78903]">
-          Solaness
-        </h1>
+      <header className="relative z-10 h-[78px]">
+        <div className="relative z-10 -ml-[8px] mt-[4px]">
+          <AppTitle
+            titleClassName="text-[32px] font-bold text-[#F78903]"
+          />
+        </div>
 
-        <img
-          src={solnyangHello}
-          alt=""
-          className="pointer-events-none absolute right-[5px] top-[4px] h-[114.5px] w-[99.47px] object-contain object-top"
-        />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <img
+            src={solnyangHello}
+            alt=""
+            className="absolute right-[5px] top-[4px] h-[114.5px] w-[99.47px] object-contain object-top"
+          />
+        </div>
       </header>
 
       {loadStatus === "loading" && (

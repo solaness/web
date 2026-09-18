@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import GuestNotice from "../../components/shared/GuestNotice";
 import ProfileHeader from "../../components/my/ProfileHeader";
 import MyMenuRow from "../../components/my/MyMenuRow";
+import AvatarBottomSheet from "../../components/my/AvatarBottomSheet";
 import IconProfile from "../../assets/icons/icon-profile.svg?react";
 import IconEdit from "../../assets/icons/icon-edit.svg?react";
 import IconPhoto from "../../assets/icons/icon-photo.svg?react";
@@ -11,10 +12,11 @@ import IconRecheck from "../../assets/icons/icon-recheck.svg?react";
 import IconLocation from "../../assets/icons/icon-location.svg?react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUserProfile } from "../../hooks/useUserProfile";
+import { useSelectedAvatar } from "../../hooks/useSelectedAvatar";
 import { updateNickname } from "../../firebase/firestore";
+import type { AvatarId } from "../../data/avatarOptions";
 
 const MY_PATH = "/my";
-const AVATAR_PATH = "/my/edit/avatar";
 const WBTI_RETAKE_PATH = "/my/edit/wbti/1";
 const REGION_EDIT_PATH = "/my/edit/region";
 const NICKNAME_MAX_LENGTH = 12;
@@ -23,14 +25,52 @@ function EditProfile() {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const { profile, isLoading: isFetchingProfile } = useUserProfile();
+  const { selectedAvatarId, selectAvatar } = useSelectedAvatar(profile?.avatarId);
 
   const [nicknameInput, setNicknameInput] = useState("");
   const [initialNickname, setInitialNickname] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isAvatarSheetOpen, setIsAvatarSheetOpen] = useState(false);
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [avatarSaveError, setAvatarSaveError] = useState<string | null>(null);
+  const [draftAvatarId, setDraftAvatarId] =
+    useState<AvatarId>(selectedAvatarId);
   // 프리필이 늦게 도착했을 때, 그 사이 사용자가 이미 입력을 시작했다면 타이핑을 덮어쓰지
   // 않기 위한 플래그.
   const hasEditedNicknameRef = useRef(false);
+
+  const handleOpenAvatarSheet = () => {
+    // 로그인 사용자의 Firestore 프로필을 아직 못 불러온 상태라면 selectedAvatarId가
+    // 실제 저장값이 아니라 DEFAULT_AVATAR_ID로 초기화돼 있을 수 있다. 이 상태에서 바로
+    // 확인을 누르면 진짜 저장된 아바타를 기본값으로 덮어써 버리므로, 로딩 중엔 열지 않는다.
+    if (!isGuest && isFetchingProfile) {
+      return;
+    }
+
+    setDraftAvatarId(selectedAvatarId);
+    setAvatarSaveError(null);
+    setIsAvatarSheetOpen(true);
+  };
+
+  const handleConfirmAvatar = async () => {
+    setIsAvatarSaving(true);
+    setAvatarSaveError(null);
+
+    try {
+      await selectAvatar(draftAvatarId);
+      setIsAvatarSheetOpen(false);
+    } catch (error) {
+      console.error("쏠냥이 프로필 저장 실패:", error);
+      setAvatarSaveError("쏠냥이 변경에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsAvatarSaving(false);
+    }
+  };
+
+  const handleCloseAvatarSheet = useCallback(() => {
+    setIsAvatarSheetOpen(false);
+  }, []);
 
   // 닉네임 프리필: 저장된 닉네임이 있으면 그걸, 없으면 Google 계정 이름을 초깃값으로 보여준다.
   useEffect(() => {
@@ -96,12 +136,25 @@ function EditProfile() {
       </header>
 
       {isGuest ? (
-        <div className="relative z-10 px-[19px] pt-6">
+        <div className="relative z-10 flex flex-col gap-6 px-[19px] pt-6">
+          <MyMenuRow
+            sectionLabel="프로필 사진 변경"
+            icon={IconPhoto}
+            label="쏠냥이 선택하기"
+            onClick={handleOpenAvatarSheet}
+            arrowVariant="circle"
+          />
           <GuestNotice message="프로필 수정은 로그인 후 이용할 수 있어요" />
         </div>
       ) : (
         <section className="relative z-10 flex flex-col gap-6 px-[19px] pb-8 pt-6">
-          <ProfileHeader user={user} isGuest={isGuest} nickname={initialNickname} showEmail />
+          <ProfileHeader
+            user={user}
+            isGuest={isGuest}
+            nickname={initialNickname}
+            avatarId={profile?.avatarId}
+            showEmail
+          />
 
           <div>
             <p className="mb-2 text-sm font-semibold text-[#754308]">닉네임 변경</p>
@@ -125,8 +178,9 @@ function EditProfile() {
             sectionLabel="프로필 사진 변경"
             icon={IconPhoto}
             label="쏠냥이 선택하기"
-            onClick={() => navigate(AVATAR_PATH)}
+            onClick={handleOpenAvatarSheet}
             arrowVariant="circle"
+            disabled={isFetchingProfile}
           />
 
           <div className="flex flex-col gap-3">
@@ -161,6 +215,17 @@ function EditProfile() {
           </button>
         </section>
       )}
+
+      <AvatarBottomSheet
+        open={isAvatarSheetOpen}
+        selectedAvatarId={draftAvatarId}
+        isGuest={isGuest}
+        onSelect={setDraftAvatarId}
+        onConfirm={handleConfirmAvatar}
+        onClose={handleCloseAvatarSheet}
+        isConfirming={isAvatarSaving}
+        errorMessage={avatarSaveError}
+      />
     </main>
   );
 }

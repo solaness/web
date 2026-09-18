@@ -17,6 +17,10 @@ import { isWbtiTypeId } from "../data/wbtiTypes";
 import type { WbtiAnswerMap, WbtiTypeId } from "../types/wbti";
 import type { PlaceCategoryCode } from "../types/place";
 import type { DailyActivity } from "../data/historyCalendar";
+import {
+  isAvatarId,
+  type AvatarId,
+} from "../data/avatarOptions";
 
 export interface OnboardingRegionInput {
   provinceCode: string;
@@ -52,6 +56,15 @@ export async function saveOnboardingResult(
   );
 }
 
+/** users/{uid} 문서 일부 필드만 merge로 갱신하는 공용 헬퍼. */
+function updateUserFields(
+  uid: string,
+  fields: Record<string, unknown>,
+): Promise<void> {
+  const userRef = doc(db, "users", uid);
+  return setDoc(userRef, fields, { merge: true });
+}
+
 /**
  * 마이페이지 "WBTI 유형 재검사"에서, 지역 정보는 건드리지 않고 WBTI 답변/유형만 갱신한다.
  */
@@ -77,6 +90,7 @@ export interface UserProfile {
   regionProvinceCode?: string;
   regionDistrictCode?: string;
   wbtiTypeId?: WbtiTypeId;
+  avatarId?: AvatarId;
 }
 
 /**
@@ -99,6 +113,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     regionProvinceCode: data.regionProvinceCode,
     regionDistrictCode: data.regionDistrictCode,
     wbtiTypeId: data.wbtiTypeId && isWbtiTypeId(data.wbtiTypeId) ? data.wbtiTypeId : undefined,
+    avatarId: data.avatarId && isAvatarId(data.avatarId) ? data.avatarId : undefined,
   };
 }
 
@@ -106,8 +121,12 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
  * 프로필 수정 화면의 "닉네임 변경"에서 사용. nickname 필드만 갱신한다.
  */
 export async function updateNickname(uid: string, nickname: string): Promise<void> {
-  const userRef = doc(db, "users", uid);
-  await setDoc(userRef, { nickname }, { merge: true });
+  await updateUserFields(uid, { nickname });
+}
+
+/** 마이페이지에서 선택한 쏠냥이 프로필 ID를 사용자 문서에 저장한다. */
+export async function updateAvatarId(uid: string, avatarId: AvatarId): Promise<void> {
+  await updateUserFields(uid, { avatarId });
 }
 
 /**

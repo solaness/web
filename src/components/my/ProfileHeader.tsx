@@ -1,11 +1,13 @@
 import type { User } from "firebase/auth";
-import solnyangProfile from "../../assets/images/solnyang-profile.svg";
+import { useSelectedAvatar } from "../../hooks/useSelectedAvatar";
+import type { AvatarId } from "../../data/avatarOptions";
 
 interface ProfileHeaderProps {
   user: User | null;
   isGuest: boolean;
   /** Firestore에 저장된 닉네임. 있으면 Google 계정 이름 대신 이걸 보여준다. */
   nickname?: string | null;
+  avatarId?: AvatarId;
   /** 프로필 수정 화면에서만 이메일도 같이 보여주고 싶을 때 켠다. */
   showEmail?: boolean;
 }
@@ -18,8 +20,9 @@ const FALLBACK_NAME = "사용자";
  * 사진은 "프로필 수정"으로 직접 바꾸기 전까지는 로그인/게스트 모두 동일한 기본 캐릭터
  * 이미지를 보여준다 (user.photoURL은 아직 안 쓴다).
  */
-function ProfileHeader({ user, isGuest, nickname, showEmail = false }: ProfileHeaderProps) {
-  const avatarUrl = solnyangProfile;
+function ProfileHeader({ user, isGuest, nickname, avatarId, showEmail = false }: ProfileHeaderProps) {
+  const { selectedAvatar } = useSelectedAvatar(avatarId);
+  const avatarUrl = selectedAvatar.imageUrl;
   const displayName = isGuest
     ? GUEST_LABEL
     : nickname || user?.displayName || FALLBACK_NAME;
