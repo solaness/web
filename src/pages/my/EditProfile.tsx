@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackgroundBlobs from "../../components/shared/BackgroundBlobs";
 import GuestNotice from "../../components/shared/GuestNotice";
@@ -47,6 +47,10 @@ function EditProfile() {
     selectAvatar(draftAvatarId);
     setIsAvatarSheetOpen(false);
   };
+
+  const handleCloseAvatarSheet = useCallback(() => {
+    setIsAvatarSheetOpen(false);
+  }, []);
 
   // 닉네임 프리필: 저장된 닉네임이 있으면 그걸, 없으면 Google 계정 이름을 초깃값으로 보여준다.
   useEffect(() => {
@@ -191,7 +195,7 @@ function EditProfile() {
         isGuest={isGuest}
         onSelect={setDraftAvatarId}
         onConfirm={handleConfirmAvatar}
-        onClose={() => setIsAvatarSheetOpen(false)}
+        onClose={handleCloseAvatarSheet}
       />
     </main>
   );

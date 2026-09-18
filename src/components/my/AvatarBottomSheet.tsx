@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
@@ -33,6 +34,7 @@ function AvatarBottomSheet({
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const avatarButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     if (!open) {
@@ -166,6 +168,41 @@ function AvatarBottomSheet({
     setDragOffset(0);
   };
 
+  const handleAvatarKeyDown = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) => {
+    let nextIndex: number | null = null;
+
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex =
+          (currentIndex + 1) % AVATAR_OPTIONS.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex =
+          (currentIndex - 1 + AVATAR_OPTIONS.length) %
+          AVATAR_OPTIONS.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = AVATAR_OPTIONS.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+
+    const nextAvatar = AVATAR_OPTIONS[nextIndex];
+    onSelect(nextAvatar.id);
+    avatarButtonRefs.current[nextIndex]?.focus();
+  };
+
   if (!open) {
     return null;
   }
@@ -232,19 +269,26 @@ function AvatarBottomSheet({
               role="radiogroup"
               aria-label="프로필 쏠냥이 목록"
             >
-              {AVATAR_OPTIONS.map((avatar) => {
+              {AVATAR_OPTIONS.map((avatar, index) => {
                 const isSelected =
                   avatar.id === selectedAvatarId;
 
                 return (
                   <button
+                    ref={(element) => {
+                      avatarButtonRefs.current[index] = element;
+                    }}
                     key={avatar.id}
                     type="button"
                     role="radio"
                     aria-checked={isSelected}
                     aria-label={avatar.label}
+                    tabIndex={isSelected ? 0 : -1}
                     onClick={() =>
                       onSelect(avatar.id)
+                    }
+                    onKeyDown={(event) =>
+                      handleAvatarKeyDown(event, index)
                     }
                     className="relative flex aspect-square items-center justify-center rounded-full bg-white p-1 shadow-[0_3px_8px_rgba(255,172,39,0.22)] transition-transform active:scale-95"
                   >
