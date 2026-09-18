@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -9,6 +10,8 @@ import {
   isAvatarId,
   type AvatarId,
 } from "../data/avatarOptions";
+import { useAuth } from "../contexts/AuthContext";
+import { updateAvatarId } from "../firebase/firestore";
 
 const STORAGE_KEY =
   "solaness:selected-avatar-id";
@@ -16,7 +19,12 @@ const STORAGE_KEY =
 const AVATAR_CHANGE_EVENT =
   "solaness:avatar-change";
 
-function readSelectedAvatarId(): AvatarId {
+interface AvatarChangeDetail {
+  avatarId: AvatarId;
+  ownerKey: string;
+}
+
+function readGuestAvatarId(): AvatarId {
   if (typeof window === "undefined") {
     return DEFAULT_AVATAR_ID;
   }
@@ -32,19 +40,53 @@ function readSelectedAvatarId(): AvatarId {
     : DEFAULT_AVATAR_ID;
 }
 
-export function useSelectedAvatar() {
+export function useSelectedAvatar(accountAvatarId?: AvatarId) {
+  const { user, isGuest } = useAuth();
+  const ownerKey = isGuest || !user ? "guest" : user.uid;
+  const ownerKeyRef = useRef(ownerKey);
+  ownerKeyRef.current = ownerKey;
   const [
     selectedAvatarId,
     setSelectedAvatarId,
   ] = useState<AvatarId>(
-    readSelectedAvatarId,
+    () =>
+      isGuest
+        ? readGuestAvatarId()
+        : accountAvatarId ?? DEFAULT_AVATAR_ID,
   );
 
   useEffect(() => {
-    const syncSelectedAvatar = () => {
+    if (isGuest) {
+      setSelectedAvatarId(readGuestAvatarId());
+    } else {
+      window.sessionStorage.removeItem(STORAGE_KEY);
       setSelectedAvatarId(
-        readSelectedAvatarId(),
+        accountAvatarId ?? DEFAULT_AVATAR_ID,
       );
+    }
+
+    const syncSelectedAvatar = (event: Event) => {
+      if (
+        event instanceof CustomEvent &&
+        typeof event.detail === "object" &&
+        event.detail !== null
+      ) {
+        const detail = event.detail as Partial<AvatarChangeDetail>;
+
+        if (
+          detail.ownerKey === ownerKey &&
+          typeof detail.avatarId === "string" &&
+          isAvatarId(detail.avatarId)
+        ) {
+          setSelectedAvatarId(detail.avatarId);
+        }
+
+        return;
+      }
+
+      if (isGuest) {
+        setSelectedAvatarId(readGuestAvatarId());
+      }
     };
 
     window.addEventListener(
@@ -68,24 +110,41 @@ export function useSelectedAvatar() {
         syncSelectedAvatar,
       );
     };
-  }, []);
+  }, [accountAvatarId, isGuest, ownerKey]);
 
   const selectAvatar = useCallback(
-    (avatarId: AvatarId) => {
-      window.sessionStorage.setItem(
-        STORAGE_KEY,
-        avatarId,
-      );
+    async (avatarId: AvatarId) => {
+      const requestedOwnerKey = ownerKey;
+
+      if (isGuest || !user) {
+        window.sessionStorage.setItem(
+          STORAGE_KEY,
+          avatarId,
+        );
+      } else {
+        await updateAvatarId(user.uid, avatarId);
+        window.sessionStorage.removeItem(STORAGE_KEY);
+      }
+
+      if (ownerKeyRef.current !== requestedOwnerKey) {
+        return;
+      }
 
       setSelectedAvatarId(avatarId);
 
       window.dispatchEvent(
-        new Event(
+        new CustomEvent(
           AVATAR_CHANGE_EVENT,
+          {
+            detail: {
+              avatarId,
+              ownerKey: requestedOwnerKey,
+            } satisfies AvatarChangeDetail,
+          },
         ),
       );
     },
-    [],
+    [isGuest, ownerKey, user],
   );
 
   const selectedAvatar =

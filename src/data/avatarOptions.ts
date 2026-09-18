@@ -11,6 +11,8 @@ import avatar09 from "../assets/images/avatars/solnyang-avatar-09.svg";
 import avatar10 from "../assets/images/avatars/solnyang-avatar-10.svg";
 import avatar11 from "../assets/images/avatars/solnyang-avatar-11.svg";
 
+// id 목록을 바꾸면 firestore.rules의 hasValidAvatarId() 허용 목록도 같이 고칠 것 —
+// 규칙 파일이 이 파일을 import할 수 없어 자동으로 동기화되지 않는다.
 export const AVATAR_OPTIONS = [
   {
     id: "avatar-00",

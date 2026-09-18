@@ -17,6 +17,8 @@ interface MyMenuRowProps {
    * 따로 만들었었는데, sectionLabel까지 중복 구현하게 돼서 이 컴포넌트에 옵션으로 합쳤다.
    */
   arrowVariant?: "chevron" | "circle";
+  /** 의존 데이터가 아직 로딩 중이라 눌러도 정확한 값을 못 줄 때 잠시 막아둘 때 쓴다. */
+  disabled?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ function MyMenuRow({
   label,
   onClick,
   arrowVariant = "chevron",
+  disabled = false,
 }: MyMenuRowProps) {
   return (
     <div>
@@ -39,7 +42,8 @@ function MyMenuRow({
       <button
         type="button"
         onClick={onClick}
-        className="flex h-[42px] w-full items-center gap-3 rounded-[16px] border border-[#FFAC27] bg-[#FFFDF4] px-4 text-left"
+        disabled={disabled}
+        className="flex h-[42px] w-full items-center gap-3 rounded-[16px] border border-[#FFAC27] bg-[#FFFDF4] px-4 text-left disabled:opacity-50"
       >
         <Icon className="h-5 w-5 shrink-0 text-[#FFAC27]" />
         <span className="flex-1 text-sm font-medium text-[#4F4F4F]">{label}</span>
