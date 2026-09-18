@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -17,6 +18,11 @@ const STORAGE_KEY =
 
 const AVATAR_CHANGE_EVENT =
   "solaness:avatar-change";
+
+interface AvatarChangeDetail {
+  avatarId: AvatarId;
+  ownerKey: string;
+}
 
 function readGuestAvatarId(): AvatarId {
   if (typeof window === "undefined") {
@@ -36,6 +42,9 @@ function readGuestAvatarId(): AvatarId {
 
 export function useSelectedAvatar(accountAvatarId?: AvatarId) {
   const { user, isGuest } = useAuth();
+  const ownerKey = isGuest || !user ? "guest" : user.uid;
+  const ownerKeyRef = useRef(ownerKey);
+  ownerKeyRef.current = ownerKey;
   const [
     selectedAvatarId,
     setSelectedAvatarId,
@@ -59,9 +68,19 @@ export function useSelectedAvatar(accountAvatarId?: AvatarId) {
     const syncSelectedAvatar = (event: Event) => {
       if (
         event instanceof CustomEvent &&
-        isAvatarId(event.detail)
+        typeof event.detail === "object" &&
+        event.detail !== null
       ) {
-        setSelectedAvatarId(event.detail);
+        const detail = event.detail as Partial<AvatarChangeDetail>;
+
+        if (
+          detail.ownerKey === ownerKey &&
+          typeof detail.avatarId === "string" &&
+          isAvatarId(detail.avatarId)
+        ) {
+          setSelectedAvatarId(detail.avatarId);
+        }
+
         return;
       }
 
@@ -91,10 +110,12 @@ export function useSelectedAvatar(accountAvatarId?: AvatarId) {
         syncSelectedAvatar,
       );
     };
-  }, [accountAvatarId, isGuest]);
+  }, [accountAvatarId, isGuest, ownerKey]);
 
   const selectAvatar = useCallback(
     async (avatarId: AvatarId) => {
+      const requestedOwnerKey = ownerKey;
+
       if (isGuest || !user) {
         window.sessionStorage.setItem(
           STORAGE_KEY,
@@ -105,16 +126,25 @@ export function useSelectedAvatar(accountAvatarId?: AvatarId) {
         window.sessionStorage.removeItem(STORAGE_KEY);
       }
 
+      if (ownerKeyRef.current !== requestedOwnerKey) {
+        return;
+      }
+
       setSelectedAvatarId(avatarId);
 
       window.dispatchEvent(
         new CustomEvent(
           AVATAR_CHANGE_EVENT,
-          { detail: avatarId },
+          {
+            detail: {
+              avatarId,
+              ownerKey: requestedOwnerKey,
+            } satisfies AvatarChangeDetail,
+          },
         ),
       );
     },
-    [isGuest, user],
+    [isGuest, ownerKey, user],
   );
 
   const selectedAvatar =

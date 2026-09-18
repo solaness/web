@@ -39,6 +39,8 @@ function AvatarBottomSheet({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const avatarButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const isConfirmingRef = useRef(isConfirming);
+  isConfirmingRef.current = isConfirming;
 
   useEffect(() => {
     if (!open) {
@@ -60,7 +62,9 @@ function AvatarBottomSheet({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        if (!isConfirmingRef.current) {
+          onClose();
+        }
         return;
       }
 
@@ -113,7 +117,11 @@ function AvatarBottomSheet({
   const handlePointerDown = (
     event: ReactPointerEvent<HTMLDivElement>,
   ) => {
-    if (!event.isPrimary || event.button !== 0) {
+    if (
+      isConfirmingRef.current ||
+      !event.isPrimary ||
+      event.button !== 0
+    ) {
       return;
     }
 
@@ -164,7 +172,8 @@ function AvatarBottomSheet({
 
     if (
       event.type === "pointerup" &&
-      finalDragDistance >= CLOSE_DRAG_DISTANCE
+      finalDragDistance >= CLOSE_DRAG_DISTANCE &&
+      !isConfirmingRef.current
     ) {
       onClose();
     }
@@ -211,10 +220,16 @@ function AvatarBottomSheet({
     return null;
   }
 
+  const handleRequestClose = () => {
+    if (!isConfirming) {
+      onClose();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-[100] flex justify-center bg-black/35"
-      onClick={onClose}
+      onClick={handleRequestClose}
       role="presentation"
     >
       <div className="relative h-full w-full max-w-md">
@@ -247,9 +262,10 @@ function AvatarBottomSheet({
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={handleRequestClose}
+            disabled={isConfirming}
             aria-label="쏠냥이 선택 창 닫기"
-            className="absolute right-[20px] top-[28px] flex h-[32px] w-[32px] items-center justify-center rounded-full bg-[#FFF3DD] text-[24px] leading-none text-[#A88455]"
+            className="absolute right-[20px] top-[28px] flex h-[32px] w-[32px] items-center justify-center rounded-full bg-[#FFF3DD] text-[24px] leading-none text-[#A88455] disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>
@@ -284,6 +300,7 @@ function AvatarBottomSheet({
                     }}
                     key={avatar.id}
                     type="button"
+                    disabled={isConfirming}
                     role="radio"
                     aria-checked={isSelected}
                     aria-label={avatar.label}
@@ -294,7 +311,7 @@ function AvatarBottomSheet({
                     onKeyDown={(event) =>
                       handleAvatarKeyDown(event, index)
                     }
-                    className="relative flex aspect-square items-center justify-center rounded-full bg-white p-1 shadow-[0_3px_8px_rgba(255,172,39,0.22)] transition-transform active:scale-95"
+                    className="relative flex aspect-square items-center justify-center rounded-full bg-white p-1 shadow-[0_3px_8px_rgba(255,172,39,0.22)] transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <img
                       src={avatar.imageUrl}
