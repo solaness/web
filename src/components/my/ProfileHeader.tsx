@@ -1,5 +1,5 @@
 import type { User } from "firebase/auth";
-import solnyangProfile from "../../assets/images/solnyang-profile.svg";
+import { useSelectedAvatar } from "../../hooks/useSelectedAvatar";
 
 interface ProfileHeaderProps {
   user: User | null;
@@ -19,7 +19,8 @@ const FALLBACK_NAME = "사용자";
  * 이미지를 보여준다 (user.photoURL은 아직 안 쓴다).
  */
 function ProfileHeader({ user, isGuest, nickname, showEmail = false }: ProfileHeaderProps) {
-  const avatarUrl = solnyangProfile;
+  const { selectedAvatar } = useSelectedAvatar();
+  const avatarUrl = selectedAvatar.imageUrl;
   const displayName = isGuest
     ? GUEST_LABEL
     : nickname || user?.displayName || FALLBACK_NAME;
