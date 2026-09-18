@@ -253,7 +253,7 @@ function AvatarBottomSheet({
                       alt=""
                       className={`h-full w-full rounded-full object-contain transition ${
                         isSelected
-                          ? "ring-[4px] ring-[#FFAC27] ring-offset-2 ring-offset-[#FFFDF6]"
+                          ? "ring-inset ring-[4px] ring-[#FFAC27]"
                           : "ring-1 ring-[#FFE2B2]"
                       }`}
                     />
