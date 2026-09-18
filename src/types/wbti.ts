@@ -52,4 +52,6 @@ export interface WbtiTypeInfo {
   placeCategories: string[];
   /** 실제 유형별 캐릭터 이미지 에셋이 준비되면 채워서 사용 (현재는 placeholder 이미지 사용) */
   imageUrl?: string;
+  /** imageUrl에서 카드 프레임(배지/라벨/배경)을 뺀 캐릭터 단독 이미지. 마이페이지 요약 카드처럼 캐릭터만 작게 보여줄 때 사용 */
+  characterImageUrl?: string;
 }
